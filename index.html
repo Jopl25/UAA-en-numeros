@@ -2508,9 +2508,23 @@
         // 3. Tarjeta 2 (CONAHCYT - 100%)
         if (textosInterfase['TARJETA 2 PRIMERA LÍNEA']) document.querySelector('.t2-tag').innerText = textosInterfase['TARJETA 2 PRIMERA LÍNEA'];
         if (textosInterfase['TARJETA 2 PRINCIPAL']) document.querySelector('.t2-title').innerText = textosInterfase['TARJETA 2 PRINCIPAL'];
-        if (textosInterfase['TARJETA 2 SECUNDARIA']) document.querySelector('.t2-desc').innerHTML = textosInterfase['TARJETA 2 SECUNDARIA'];
+        
+        // Calcular el porcentaje real de posgrados (FilasAcreditaciones[1] corresponde a Posgrado/CONAHCYT)
+        let porcentajeT2 = 100; // Valor por defecto
+        if (filasAcreditaciones.length > 1) {
+          const t2 = filasAcreditaciones[1];
+          porcentajeT2 = t2.ofertables > 0 ? Math.round((t2.acreditados / t2.ofertables) * 100) : 0;
+        }
+
+        // Reconstruir el texto inyectando el porcentaje y el nombre del sistema en negritas
+        const t2Desc = document.querySelector('.t2-desc');
+        if (t2Desc) {
+          t2Desc.innerHTML = `El <strong>${porcentajeT2}%</strong> de nuestros programas educativos de posgrado ofertables se encuentran avalados y vigentes en el <strong>Sistema Nacional de Posgrados (SNP)</strong>.`;
+        }
         if (textosInterfase['TARJETA 2 COMENTARIO']) document.querySelector('.t2-footer').innerText = textosInterfase['TARJETA 2 COMENTARIO'];
-        animarDato(document.querySelector('.t2-pct'), 100);
+        
+        // Animamos el gráfico con la variable calculada en lugar del 100 fijo
+        animarDato(document.querySelector('.t2-pct'), porcentajeT2);
 
         // 4. Tarjeta 3 (Internacional)
         if (filasAcreditaciones.length > 2) {
@@ -3057,7 +3071,7 @@
         let profesores = totalPlantilla - tecnicosAc;
 
         document.getElementById('b6-total-plantilla').setAttribute('data-target', totalPlantilla);
-        document.getElementById('b6-plantilla-texto').innerHTML = `Conformado por <strong>${profesores.toLocaleString('es-MX')} profesores</strong> de distintas dedicaciones y <strong>${tecnicosAc.toLocaleString('es-MX')} técnicos académicos</strong> especializados.`;
+        document.getElementById('b6-plantilla-texto').innerHTML = `Conformado por <strong>${profesores.toLocaleString('es-MX')} profesores</strong> de distintas dedicaciones y <strong>${tecnicosAc.toLocaleString('es-MX')} Técnicos Académicos</strong> especializados.`;
 
         // 3. Tarjeta 2: Tipos de Contratación (Barras)
         if (textosInterfase['TARJETA 2 PRIMERA LÍNEA']) document.getElementById('b6-t2-tag').innerText = textosInterfase['TARJETA 2 PRIMERA LÍNEA'].h;

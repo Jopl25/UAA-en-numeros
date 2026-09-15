@@ -142,7 +142,7 @@
     /* ==================== ENCABEZADOS ==================== */
     .block-header { margin-bottom: 34px; position: relative; z-index: 2; }
     .block-tag { font-family: var(--font-display); font-size: 25px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--uaa-teal); display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-    .block-tag span { color: var(--uaa-gold-vibrant); font-weight: 700; }
+    .block-tag span:first-child { color: var(--uaa-gold-vibrant); font-weight: 700; }
     .block-title { font-family: var(--font-display); font-size: clamp(34px, 4.6vw, 52px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; color: var(--uaa-navy); margin-bottom: 14px; }
     .block-lead-wrap { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px; padding-bottom: 22px; border-bottom: 1px solid rgba(22, 48, 114, 0.1); }
     .block-lead { font-family: var(--font-serif); font-size: clamp(17px, 1.9vw, 21px); color: var(--text-secondary); max-width: 760px; line-height: 1.6; }
@@ -2546,7 +2546,7 @@
   });
 
   // =========================================================================
-  // AUTOMATIZACIÓN BLOQUE 04: BECAS Y APOYOS (ANIMACIONES V10 RESTAURADAS)
+  // AUTOMATIZACIÓN BLOQUE 04: BECAS Y APOYOS (GRÁFICA HISTÓRICA DINÁMICA)
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
     const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
@@ -2556,7 +2556,6 @@
     function animarDato(elemento, objetivo, prefix = '') {
       if (!elemento) return;
       elemento.setAttribute('data-target', objetivo);
-      elemento.setAttribute('data-prefix', prefix);
       const duration = 1400;
       const startTime = performance.now();
       const update = (currentTime) => {
@@ -2685,32 +2684,36 @@
           htmlXAxis += `<div class="x-axis-label">${hist.anio}</div>`;
         });
 
-        document.getElementById('b4-history-chart').innerHTML = htmlBars;
-        document.getElementById('b4-history-xaxis').innerHTML = htmlXAxis;
+        const historyChart = document.getElementById('b4-history-chart');
+        const historyXaxis = document.getElementById('b4-history-xaxis');
+
+        historyChart.innerHTML = htmlBars;
+        historyXaxis.innerHTML = htmlXAxis;
+
+        // ESTA ES LA SOLUCIÓN: Sobrescribe el CSS para que la cuadrícula 
+        // tenga exactamente tantas columnas como años haya en Google Sheets
+        historyChart.style.gridTemplateColumns = `repeat(${historico.length}, 1fr)`;
+        historyXaxis.style.gridTemplateColumns = `repeat(${historico.length}, 1fr)`;
 
         // =========================================================================
         // DEVOLVER ANIMACIONES E INTERACTIVIDAD AL DOM INYECTADO
         // =========================================================================
-        
-        // Reconectar los clics de las gráficas
-        const historyContainer = document.getElementById('b4-history-chart');
-        if (historyContainer) {
-          const groups = historyContainer.querySelectorAll('.chart-bar-group');
+        if (historyChart) {
+          const groups = historyChart.querySelectorAll('.chart-bar-group');
           groups.forEach(group => {
             group.addEventListener('click', () => {
               if (group.classList.contains('active')) {
                 group.classList.remove('active');
-                historyContainer.classList.remove('has-active');
+                historyChart.classList.remove('has-active');
               } else {
                 groups.forEach(g => g.classList.remove('active'));
                 group.classList.add('active');
-                historyContainer.classList.add('has-active');
+                historyChart.classList.add('has-active');
               }
             });
           });
         }
 
-        // Detonar las animaciones de barras y números
         setTimeout(() => {
           const cardsContainer = document.getElementById('bloque-04-cards');
           if(!cardsContainer) return;

@@ -1703,6 +1703,56 @@
         </div>
       </article>
     </section>
+
+    <!-- BLOQUE FINAL: DUDAS Y CONTACTO -->
+    <div id="bloque-15" class="block-divider"></div>
+    <header class="block-header reveal">
+      <div class="block-tag"><span>15</span> Contacto</div>
+      <h1 class="block-title">¿Tienes alguna duda?</h1>
+      <div class="block-lead-wrap">
+        <p class="block-lead">Si requieres mayor detalle o información adicional sobre la estadística institucional, no dudes en ponerte en contacto con nosotros.</p>
+      </div>
+    </header>
+
+    <section class="grid">
+      <article class="card card-12 reveal" style="padding: 50px 40px; display: flex; flex-direction: column; gap: 40px; align-items: center; text-align: center;">
+        
+        <!-- Parte Superior: Correo Principal -->
+        <div>
+          <div class="icon-box lg icon-navy" style="margin: 0 auto 20px; width: 64px; height: 64px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px;">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </div>
+          <h3 class="card-title xl" style="margin-bottom: 12px;">Escríbenos a nuestro correo</h3>
+          <a href="#" id="contacto-correo-link" style="font-size: clamp(24px, 4vw, 36px); font-weight: 800; color: var(--uaa-teal); text-decoration: none; transition: 0.3s; display: inline-block;">
+            cargando correo...
+          </a>
+        </div>
+
+        <!-- Parte Inferior: Detalles Adicionales -->
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 32px; width: 100%; border-top: 1px solid rgba(22, 48, 114, 0.1); padding-top: 36px;">
+          
+          <div style="flex: 1; min-width: 220px; text-align: center;">
+            <div style="font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--uaa-navy); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em;">Dirección</div>
+            <div id="contacto-direccion" style="font-size: 14.5px; color: var(--text-secondary); line-height: 1.6; max-width: 300px; margin: 0 auto;">cargando...</div>
+          </div>
+          
+          <div style="flex: 1; min-width: 220px; text-align: center;">
+            <div style="font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--uaa-navy); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em;">Teléfono</div>
+            <div id="contacto-telefono" style="font-size: 14.5px; color: var(--text-secondary); line-height: 1.6;">cargando...</div>
+          </div>
+          
+          <div style="flex: 1; min-width: 220px; text-align: center;">
+            <div style="font-family: var(--font-display); font-size: 13px; font-weight: 700; color: var(--uaa-navy); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.05em;">Ubicación Física</div>
+            <div id="contacto-edificio" style="font-size: 14.5px; color: var(--text-secondary); line-height: 1.6;">cargando...</div>
+          </div>
+
+        </div>
+      </article>
+    </section>
+
   </div>
 
   <div class="glass-modal-overlay" id="modalCentros">
@@ -1748,6 +1798,7 @@
         <li class="nav-menu-item"><a href="#bloque-12"><span class="nav-badge-num">12</span> Directorio de Espacios</a></li>
         <li class="nav-menu-item"><a href="#bloque-13"><span class="nav-badge-num">13</span> Personal Administrativo</a></li>
         <li class="nav-menu-item"><a href="#bloque-14"><span class="nav-badge-num">14</span> Informes y Reportes</a></li>
+        <li class="nav-menu-item"><a href="#bloque-15"><span class="nav-badge-num">15</span> Dudas y Contacto</a></li>
       </ul>
     </div>
 
@@ -4215,7 +4266,97 @@
       .catch(error => {
         console.error('Detalle del error en Bloque 14:', error);
       });
-  });  
+  });
+
+// =========================================================================
+  // AUTOMATIZACIÓN BLOQUE: DUDAS / CONTACTO
+  // =========================================================================
+  window.addEventListener('DOMContentLoaded', () => {
+    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
+    const sheetNameContacto = 'Dudas';
+    const csvUrlContacto = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameContacto)}`;
+
+    function parseCSV(text) {
+      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
+      for (l of text) {
+        if ('"' === l) {
+          if (s && l === p) row[i] += l;
+          s = !s;
+        } else if (',' === l && s) l = row[++i] = '';
+        else if ('\n' === l && s) {
+          if ('\r' === p) row[i] = row[i].slice(0, -1);
+          row = ret[++r] = [l = '']; i = 0;
+        } else row[i] += l;
+        p = l;
+      }
+      return ret;
+    }
+
+    fetch(csvUrlContacto)
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        return response.text();
+      })
+      .then(csvText => {
+        const data = parseCSV(csvText);
+        
+        // 1. Objeto para almacenar toda la información temporalmente
+        let infoContacto = { correo: '', direccion: '', telefono: '', extension: '', edificio: '' };
+
+        // 2. Leer todas las filas de la base de datos
+        for (let i = 0; i < data.length; i++) {
+          const row = data[i];
+          if (!row || row.length === 0) continue;
+
+          const etiqueta = (row[0] || '').trim();
+          const valor = (row[1] || '').trim();
+
+          if (etiqueta.includes('Correo')) infoContacto.correo = valor;
+          else if (etiqueta.includes('Direcci')) infoContacto.direccion = valor;
+          else if (etiqueta.includes('Teléf')) infoContacto.telefono = valor;
+          else if (etiqueta.includes('Extensi')) infoContacto.extension = valor;
+          else if (etiqueta.includes('Edificio')) infoContacto.edificio = valor;
+        }
+
+        // 3. INYECTAR LA INFORMACIÓN AL HTML
+        
+        // Inyectar el Correo
+        if (infoContacto.correo) {
+          const linkCorreo = document.getElementById('contacto-correo-link');
+          if (linkCorreo) {
+            linkCorreo.innerText = infoContacto.correo;
+            linkCorreo.href = `mailto:${infoContacto.correo}`; 
+          }
+        }
+
+        // Inyectar Dirección
+        if (infoContacto.direccion) {
+          const elDireccion = document.getElementById('contacto-direccion');
+          if (elDireccion) elDireccion.innerText = infoContacto.direccion;
+        }
+
+        // Inyectar Teléfono y Extensión (combinados)
+        if (infoContacto.telefono || infoContacto.extension) {
+          const elTelefono = document.getElementById('contacto-telefono');
+          let textoTelefono = infoContacto.telefono;
+          // Si hay extensión, la agregamos en un renglón nuevo
+          if (infoContacto.extension) {
+            textoTelefono += `\n${infoContacto.extension}`;
+          }
+          if (elTelefono) elTelefono.innerText = textoTelefono;
+        }
+
+        // Inyectar Edificio
+        if (infoContacto.edificio) {
+          const elEdificio = document.getElementById('contacto-edificio');
+          if (elEdificio) elEdificio.innerText = infoContacto.edificio;
+        }
+
+      })
+      .catch(error => {
+        console.error('Detalle del error en Bloque Dudas:', error);
+      });
+  });
 
   </script>
 </body>

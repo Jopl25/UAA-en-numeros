@@ -93,7 +93,23 @@
     .header-brand-wrap { display: flex; align-items: center; justify-content: flex-start; }
     .header-brand-logo { height: 100px; width: auto; display: block; object-fit: contain; }
     .header-logo-wrap { display: flex; align-items: center; justify-content: flex-end; }
-    .header-logo { height: 75px; width: auto; display: block; object-fit: contain; filter: grayscale(100%) contrast(150%) brightness(0%); }
+    .header-logo { 
+      height: 75px; 
+      width: auto; 
+      display: inline-block; 
+      object-fit: contain; 
+      /* Pintamos el logo con el tono azul institucional exacto */
+      background-color: var(--uaa-navy); 
+      /* Usamos la propia imagen como máscara recortable */
+      -webkit-mask-image: url('Logo.png');
+      mask-image: url('Logo.png');
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-position: center;
+    }
 
     /* ==================== CLASES UTILITARIAS Y OPTIMIZADAS ==================== */
     .flex-row-start { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
@@ -1790,11 +1806,11 @@
         <li class="nav-menu-item"><a href="#bloque-04"><span class="nav-badge-num">04</span> Becas y Apoyos</a></li>
         <li class="nav-menu-item"><a href="#bloque-05"><span class="nav-badge-num">05</span> Egresados</a></li>
         <li class="nav-menu-item"><a href="#bloque-06"><span class="nav-badge-num">06</span> Personal Académico</a></li>
-        <li class="nav-menu-item"><a href="#bloque-07"><span class="nav-badge-num">07</span> Productividad Científica</a></li>
+        <li class="nav-menu-item"><a href="#bloque-07"><span class="nav-badge-num">07</span> Proyectos de Investigación</a></li>
         <li class="nav-menu-item"><a href="#bloque-08"><span class="nav-badge-num">08</span> Publicaciones Científicas</a></li>
         <li class="nav-menu-item"><a href="#bloque-09"><span class="nav-badge-num">09</span> Propiedad Intelectual</a></li>
         <li class="nav-menu-item"><a href="#bloque-10"><span class="nav-badge-num">10</span> Producción Editorial</a></li>
-        <li class="nav-menu-item"><a href="#bloque-11"><span class="nav-badge-num">11</span> Infraestructura</a></li>
+        <li class="nav-menu-item"><a href="#bloque-11"><span class="nav-badge-num">11</span> Infraestructura Universitaria</a></li>
         <li class="nav-menu-item"><a href="#bloque-12"><span class="nav-badge-num">12</span> Directorio de Espacios</a></li>
         <li class="nav-menu-item"><a href="#bloque-13"><span class="nav-badge-num">13</span> Personal Administrativo</a></li>
         <li class="nav-menu-item"><a href="#bloque-14"><span class="nav-badge-num">14</span> Informes y Reportes</a></li>
@@ -1816,6 +1832,67 @@
   <!-- FIN DEL BLOQUE HTML MOVIDO -->
 
   <script>
+    // =======================================================================
+    // CONFIGURACIÓN GLOBAL
+    // =======================================================================
+    // ID del documento de Google Sheets de donde se extrae la información.
+    // Solo cambia esta constante si el documento fuente cambia.
+    const SPREADSHEET_ID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
+    
+    // Función para obtener la URL de descarga del CSV
+    function getCsvUrl(sheetName, useExport = false) {
+      if (useExport) {
+        return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&sheet=${encodeURIComponent(sheetName)}`;
+      }
+      return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    }
+
+    function fetchSheetData(sheetName, useExport = false) {
+      return fetch(getCsvUrl(sheetName, useExport))
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+          return response.text();
+        })
+        .then(csvText => parseCSV(csvText));
+    }
+
+    function parseCSV(text) {
+      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
+      for (l of text) {
+        if ('"' === l) {
+          if (s && l === p) row[i] += l;
+          s = !s;
+        } else if (',' === l && s) l = row[++i] = '';
+        else if ('\n' === l && s) {
+          if ('\r' === p) row[i] = row[i].slice(0, -1);
+          row = ret[++r] = [l = '']; i = 0;
+        } else row[i] += l;
+        p = l;
+      }
+      return ret;
+    }
+
+    function animarDato(elemento, objetivo, prefix = '') {
+      if (!elemento) return;
+      elemento.setAttribute('data-target', objetivo);
+      const duration = 1400;
+      const startTime = performance.now();
+      const update = (currentTime) => {
+        const progress = Math.min((currentTime - startTime) / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
+        if (progress < 1) requestAnimationFrame(update);
+        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
+      };
+      requestAnimationFrame(update);
+    }
+
+    const cleanNum = (val) => {
+      if (!val) return 0;
+      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
+      return isNaN(num) ? 0 : num;
+    };
+
     // 1. Reveal Scroll
     const reveals = document.querySelectorAll('.reveal');
     const revealObserver = new IntersectionObserver((entries) => {
@@ -1969,7 +2046,6 @@
     activarGraficaInteractiva('.history-chart-container');
     activarGraficaInteractiva('.bar-chart-container');
 
-
   // --- NAVEGACIÓN FLOTANTE ARRASTRABLE (DRAG & DROP CON POINTER EVENTS) ---
 (function initDraggableNav() {
   const wrapper = document.getElementById('floatingNav');
@@ -2076,7 +2152,6 @@
   });
 })();
 
-
 // --- SECUENCIA DE ONBOARDING DEL MENÚ ---
   setTimeout(() => {
     const wrapper = document.getElementById('floatingNav');
@@ -2133,55 +2208,7 @@
   // AUTOMATIZACIÓN BLOQUE 01: MATRÍCULA
   // =========================================================================
   document.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetName = '01_Matricula';
-    
-    const csvUrlB1 = `https://docs.google.com/spreadsheets/d/${sheetID}/export?format=csv&sheet=${encodeURIComponent(sheetName)}`;
-
-    function animarDato(elemento, objetivo) {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB1)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('01_Matricula', true).then(data => {
         
         let totalGlobal = 0, masGlobal = 0, femGlobal = 0, xGlobal = 0;
         let textosInterfase = {};
@@ -2327,54 +2354,7 @@
   // AUTOMATIZACIÓN BLOQUE 02: OFERTA EDUCATIVA
   // =========================================================================
   document.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB2 = '02_Oferta_Educativa';
-    const csvUrlB2 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB2)}`;
-
-    function animarDato(elemento, objetivo) {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB2)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('02_Oferta_Educativa').then(data => {
         
         let textosInterfase = {};
         let datosNiveles = [];
@@ -2452,54 +2432,7 @@
   // AUTOMATIZACIÓN BLOQUE 03: CALIDAD Y RECONOCIMIENTO
   // =========================================================================
   document.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB3 = '03_Acreditaciones';
-    const csvUrlB3 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB3)}`;
-
-    function animarDato(elemento, objetivo) {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB3)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('03_Acreditaciones').then(data => {
         
         let textosInterfase = {};
         let filasAcreditaciones = [];
@@ -2614,54 +2547,7 @@
   // AUTOMATIZACIÓN BLOQUE 04: BECAS Y APOYOS (GRÁFICA HISTÓRICA DINÁMICA)
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB4 = '04_Becas';
-    const csvUrlB4 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB4)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB4)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('04_Becas').then(data => {
         
         let textosInterfase = {};
         let inversiones = [];
@@ -2810,54 +2696,7 @@
   // AUTOMATIZACIÓN BLOQUE 05: EGRESADOS E IMPACTO HISTÓRICO (CORREGIDO)
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB5 = '05_Egresados';
-    const csvUrlB5 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB5)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB5)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('05_Egresados').then(data => {
         
         let textosInterfase = {};
         let nivelesEgresados = [];
@@ -3013,54 +2852,7 @@
   // AUTOMATIZACIÓN BLOQUE 06: PERSONAL ACADÉMICO
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB6 = '06_Personal_Academico';
-    const csvUrlB6 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB6)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB6)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('06_Personal_Academico').then(data => {
         
         let textosInterfase = {};
         let contratacion = [];
@@ -3215,54 +3007,7 @@
   // AUTOMATIZACIÓN BLOQUE 07: PROYECTOS DE INVESTIGACIÓN VIGENTES
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB7 = '07_Proyectos_Inv';
-    const csvUrlB7 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB7)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB7)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('07_Proyectos_Inv').then(data => {
 
         let textosInterfase = {};
         let totalProyectos = 0;
@@ -3341,54 +3086,7 @@
   // AUTOMATIZACIÓN BLOQUE 08: PUBLICACIONES CIENTÍFICAS
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB8 = '08_Publicaciones';
-    const csvUrlB8 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB8)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB8)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('08_Publicaciones').then(data => {
 
         let textosInterfase = {};
         let publicaciones = [];
@@ -3488,54 +3186,7 @@
   // AUTOMATIZACIÓN BLOQUE 09: PATENTES INSTITUCIONALES
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB9 = '09_Patentes';
-    const csvUrlB9 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB9)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB9)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('09_Patentes').then(data => {
 
         let textosInterfase = {};
         let otorgadas = 0;
@@ -3616,54 +3267,7 @@
   // AUTOMATIZACIÓN BLOQUE 10: PRODUCCIÓN EDITORIAL
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB10 = '10_Editorial';
-    const csvUrlB10 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB10)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB10)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('10_Editorial').then(data => {
 
         let textosInterfase = {};
         let impresas = 0;
@@ -3736,54 +3340,7 @@
   // AUTOMATIZACIÓN BLOQUE 11: INFRAESTRUCTURA UNIVERSITARIA
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB11 = '11_Infraestructura';
-    const csvUrlB11 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB11)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB11)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('11_Infraestructura').then(data => {
 
         let textosInterfase = {};
         let totalMetros = 0;
@@ -3891,33 +3448,7 @@
   // AUTOMATIZACIÓN BLOQUE 12: DIRECTORIO DE ESPACIOS
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB12 = '12_Directorio';
-    const csvUrlB12 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB12)}`;
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    fetch(csvUrlB12)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('12_Directorio').then(data => {
 
         let textosInterfase = {};
         
@@ -3994,54 +3525,7 @@
   // AUTOMATIZACIÓN BLOQUE 13: PERSONAL ADMINISTRATIVO
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB13 = '13_Personal_Administrativo';
-    const csvUrlB13 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB13)}`;
-
-    function animarDato(elemento, objetivo, prefix = '') {
-      if (!elemento) return;
-      elemento.setAttribute('data-target', objetivo);
-      const duration = 1400;
-      const startTime = performance.now();
-      const update = (currentTime) => {
-        const progress = Math.min((currentTime - startTime) / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        elemento.innerText = prefix + Math.floor(easeOut * objetivo).toLocaleString('es-MX');
-        if (progress < 1) requestAnimationFrame(update);
-        else elemento.innerText = prefix + objetivo.toLocaleString('es-MX');
-      };
-      requestAnimationFrame(update);
-    }
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    const cleanNum = (val) => {
-      if (!val) return 0;
-      const num = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
-      return isNaN(num) ? 0 : num;
-    };
-
-    fetch(csvUrlB13)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('13_Personal_Administrativo').then(data => {
 
         let textosInterfase = {};
         
@@ -4175,33 +3659,7 @@
   // AUTOMATIZACIÓN BLOQUE 14: INFORMES Y REPORTES INSTITUCIONALES
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameB14 = '14_Reportes';
-    const csvUrlB14 = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameB14)}`;
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    fetch(csvUrlB14)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('14_Reportes').then(data => {
 
         let textosInterfase = {};
         let reportes = [];
@@ -4272,33 +3730,7 @@
   // AUTOMATIZACIÓN BLOQUE: DUDAS / CONTACTO
   // =========================================================================
   window.addEventListener('DOMContentLoaded', () => {
-    const sheetID = '1tbT-0l_GJ1DCuOvUeAeKTOF5MyJmbwDWXzxJni9_iP4';
-    const sheetNameContacto = 'Dudas';
-    const csvUrlContacto = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetNameContacto)}`;
-
-    function parseCSV(text) {
-      let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-      for (l of text) {
-        if ('"' === l) {
-          if (s && l === p) row[i] += l;
-          s = !s;
-        } else if (',' === l && s) l = row[++i] = '';
-        else if ('\n' === l && s) {
-          if ('\r' === p) row[i] = row[i].slice(0, -1);
-          row = ret[++r] = [l = '']; i = 0;
-        } else row[i] += l;
-        p = l;
-      }
-      return ret;
-    }
-
-    fetch(csvUrlContacto)
-      .then(response => {
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        return response.text();
-      })
-      .then(csvText => {
-        const data = parseCSV(csvText);
+    fetchSheetData('Dudas').then(data => {
         
         // 1. Objeto para almacenar toda la información temporalmente
         let infoContacto = { correo: '', direccion: '', telefono: '', extension: '', edificio: '' };

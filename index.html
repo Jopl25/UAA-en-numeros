@@ -1720,10 +1720,82 @@
       </article>
     </section>
 
-    <!-- BLOQUE FINAL: DUDAS Y CONTACTO -->
+    <!-- BLOQUE 15: OTROS DATOS -->
     <div id="bloque-15" class="block-divider"></div>
     <header class="block-header reveal">
-      <div class="block-tag"><span>15</span> Contacto</div>
+      <div class="block-tag"><span>15</span> <span id="b15-tag-text">...</span></div>
+      <h1 class="block-title" id="b15-title">...</h1>
+    </header>
+
+    <section class="grid" id="bloque-15-cards">
+      
+      <!-- Tarjeta Movilidad (Diseño Narrativo) -->
+      <article class="card card-6 flex-col-between reveal" style="background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(22,48,114,0.04) 100%);">
+        <div>
+          <div class="flex-row-start" style="margin-bottom: 20px;">
+            <div class="icon-box lg icon-navy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            </div>
+            <h3 class="card-title lg">Movilidad Académica</h3>
+          </div>
+          <!-- TEXTO MÁS NÍTIDO Y OSCURO -->
+          <p id="b15-mov-desc" style="font-size: 15.5px; line-height: 1.6; margin-bottom: 24px; text-align: justify; color: var(--text-primary);">
+            ...
+          </p>
+        </div>
+        <div>
+          <div class="hero-metric-bar-yellow" style="max-width: 140px;"></div>
+        </div>
+      </article>
+
+      <!-- Tarjeta Incubadora (Diseño Narrativo) -->
+      <article class="card card-6 flex-col-between reveal" style="background: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(212,177,52,0.05) 100%);">
+        <div>
+          <div class="flex-row-start" style="margin-bottom: 20px;">
+            <div class="icon-box lg icon-gold">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H15"></path><path d="M12 3C7.5 3 4 6.6 4 11.2C4 13.9 5.4 16.3 7.5 17.6V19C7.5 19.6 7.9 20 8.5 20H15.5C16.1 20 16.5 19.6 16.5 19V17.6C18.6 16.3 20 13.9 20 11.2C20 6.6 16.5 3 12 3Z"></path></svg>
+            </div>
+            <h3 class="card-title lg">Incubadora de Negocios</h3>
+          </div>
+          <!-- TEXTO MÁS NÍTIDO Y OSCURO -->
+          <p id="b15-inc-desc" style="font-size: 15.5px; line-height: 1.6; margin-bottom: 24px; text-align: justify; color: var(--text-primary);">
+            ...
+          </p>
+        </div>
+        <div>
+          <div class="hero-metric-bar-yellow" style="max-width: 140px;"></div>
+        </div>
+      </article>
+
+      <!-- Tarjeta Feria Ambiental -->
+      <article class="card card-12 reveal">
+        <div class="flex-row-start" style="margin-bottom: 16px;">
+          <div class="icon-box lg icon-teal" style="padding: 8px;">
+            <!-- Solo reemplaza el enlace de abajo por el PNG de tu nuevo ícono de feria -->
+            <img src="https://marketplace.canva.com/1v2rg/MAHGu41v2rg/1/tl/canva-icono-de-%C3%A1rbol-de-contorno-simple-%28gr%C3%A1fico-vectorial%29-MAHGu41v2rg.png" alt="Feria Ambiental" style="width: 100%; height: 100%; object-fit: contain; opacity: 0.9;">
+          </div>
+          <h3 class="card-title lg">Feria Ambiental Universitaria</h3>
+        </div>
+        
+        <p id="b15-feria-p1" style="font-size: 16px; margin-bottom: 24px; color: var(--text-primary); line-height: 1.6;">...</p>
+        
+        <div style="background: rgba(21, 96, 130, 0.04); padding: 32px; border-radius: 20px; border: 1px solid rgba(21, 96, 130, 0.1);">
+          <p id="b15-feria-res" style="font-size: 15.5px; margin-bottom: 28px; color: var(--uaa-navy); font-weight: 600; line-height: 1.5;">...</p>
+          
+          <!-- Contenedor Grid MÁS GRANDE (280px) -->
+          <div id="b15-feria-desglose" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            <!-- JS inyectará las tarjetas de materiales aquí -->
+          </div>
+        </div>
+        
+        <p id="b15-feria-concl" style="font-size: 15.5px; margin-top: 24px; text-align: justify; color: var(--text-primary); display: none; line-height: 1.6;">...</p>
+      </article>
+    </section>
+
+    <!-- BLOQUE FINAL: DUDAS Y CONTACTO -->
+    <div id="bloque-16" class="block-divider"></div>
+    <header class="block-header reveal">
+      <div class="block-tag"><span>16</span> Contacto</div>
       <h1 class="block-title">¿Tienes alguna duda?</h1>
       <div class="block-lead-wrap">
         <p class="block-lead">Si requieres mayor detalle o información adicional sobre la estadística institucional, no dudes en ponerte en contacto con nosotros.</p>
@@ -1814,7 +1886,8 @@
         <li class="nav-menu-item"><a href="#bloque-12"><span class="nav-badge-num">12</span> Directorio de Espacios</a></li>
         <li class="nav-menu-item"><a href="#bloque-13"><span class="nav-badge-num">13</span> Personal Administrativo</a></li>
         <li class="nav-menu-item"><a href="#bloque-14"><span class="nav-badge-num">14</span> Informes y Reportes</a></li>
-        <li class="nav-menu-item"><a href="#bloque-15"><span class="nav-badge-num">15</span> Dudas y Contacto</a></li>
+        <li class="nav-menu-item"><a href="#bloque-15"><span class="nav-badge-num">15</span> Otros Datos</a></li>
+        <li class="nav-menu-item"><a href="#bloque-16"><span class="nav-badge-num">16</span> Dudas y Contacto</a></li>
       </ul>
     </div>
 
@@ -3724,6 +3797,132 @@
       .catch(error => {
         console.error('Detalle del error en Bloque 14:', error);
       });
+  });
+
+// =========================================================================
+  // AUTOMATIZACIÓN BLOQUE 15: OTROS DATOS (CORRECCIÓN ESTRICTA DE TÍTULOS)
+  // =========================================================================
+  window.addEventListener('DOMContentLoaded', () => {
+    fetchSheetData('15_Otros').then(data => {
+        let datos = {};
+        let desgloseFeria = [];
+
+        const parseDecimal = (val) => parseFloat(String(val).replace(/[^\d.-]/g, '')) || 0;
+
+        for (let i = 0; i < data.length; i++) {
+          const row = data[i];
+          // Validar que la fila exista y tenga al menos hasta la columna C (índice 2)
+          if (!row || row.length < 3) continue; 
+
+          // Limpieza estricta: un solo espacio entre palabras, sin acentos, todo mayúsculas
+          let colB = String(row[1] || '')
+            .trim()
+            .toUpperCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, ' '); 
+            
+          let colC = String(row[2] || '').trim();
+          let colD = String(row[3] || '').trim(); // Columna D
+          let colE = String(row[4] || '').trim(); // Columna E (URLs)
+
+          if (colB === 'CONCEPTO' || colB === '') continue;
+
+          // Asignación con coincidencia exacta para evitar falsos positivos
+          if (colB === 'PRIMERA LINEA') {
+            datos['TAG'] = colC;
+          } else if (colB === 'LINEA PRINCIPAL') {
+            datos['TITLE'] = colC;
+          } else if (colB === 'DESGLOSE') {
+            desgloseFeria.push({ material: colC, kilos: parseDecimal(colD), img: colE });
+          } else {
+            datos[colB] = colC; 
+          }
+        }
+
+        const b15 = document.getElementById('bloque-15-cards');
+        if (!b15) return;
+
+        // 1. Textos Generales 
+        document.getElementById('b15-tag-text').innerText = datos['TAG'] || 'OTROS DATOS';
+        document.getElementById('b15-title').innerText = datos['TITLE'] || 'Sobre nuestra Universidad';
+
+        // 2. Historias Narrativas 
+        const movNac = datos['NACIONAL'] || '0';
+        const movInt = datos['INTERNACIONAL'] || '0';
+        document.getElementById('b15-mov-desc').innerHTML = `La proyección global de nuestra comunidad estudiantil se fortalece a través de los programas de intercambio. Actualmente contamos con una participación de <strong style="color: var(--uaa-navy); font-size: 30px;">${movNac}</strong> estudiantes en movilidad académica a nivel nacional y <strong style="color: var(--uaa-navy); font-size: 30px;">${movInt}</strong> estudiantes a nivel internacional.`;
+
+        const incTot = datos['TOTAL PROYECTOS'] || '0';
+        const incStart = datos['STARTUPS'] || '0';
+        document.getElementById('b15-inc-desc').innerHTML = `Fomentamos el emprendimiento universitario impulsando iniciativas innovadoras. Nuestra incubadora respalda activamente <strong style="color: var(--uaa-navy); font-size: 30px;">${incTot}</strong> proyectos de negocios, de los cuales <strong style="color: var(--uaa-gold-vibrant); font-size: 30px;">${incStart}</strong> han logrado consolidarse exitosamente como <em>startups</em> en el mercado actual.`;
+
+        // 3. Párrafos de la Feria Ambiental
+        const pFeria = `Durante ${datos['FECHA'] || ''} se llevó a cabo la ${datos['EDICION'] || ''} ${datos['NOMBRE'] || ''}, ${datos['CUERPO'] || ''}`;
+        document.getElementById('b15-feria-p1').innerText = pFeria;
+        document.getElementById('b15-feria-res').innerText = datos['RESULTADOS'] || '';
+        
+        const feriaConcl = document.getElementById('b15-feria-concl');
+        if (datos['CONCLUSION']) {
+          feriaConcl.innerText = datos['CONCLUSION'];
+          feriaConcl.style.display = 'block';
+        }
+
+        // 4. Inyección de Tarjetas con las Imágenes PNG
+        let htmlDesglose = '';
+        desgloseFeria.forEach(item => {
+          const imgTag = item.img ? `<img src="${item.img}" alt="${item.material}" style="width: 100%; height: 100%; object-fit: contain; opacity: 0.85;">` : '';
+
+          htmlDesglose += `
+            <div style="background: #FFFFFF; border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 12px rgba(22, 48, 114, 0.05); transition: transform 0.2s, box-shadow 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(22, 48, 114, 0.12)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(22, 48, 114, 0.05)'">
+              <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(21, 96, 130, 0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 10px;">
+                <div style="width: 100%; height: 100%;">
+                  ${imgTag}
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">${item.material}</div>
+                <div style="font-size: 24px; font-weight: 800; color: var(--uaa-navy); line-height: 1;">
+                  <span class="counter-dec" data-target="${item.kilos}">0</span><span style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-left: 6px;">kg</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('b15-feria-desglose').innerHTML = htmlDesglose;
+
+        const animarDatoDecimal = (elemento, objetivo) => {
+          const duration = 1400;
+          const startTime = performance.now();
+          const update = (currentTime) => {
+            const progress = Math.min((currentTime - startTime) / duration, 1);
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const actual = easeOut * objetivo;
+            elemento.innerText = actual.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                elemento.innerText = objetivo.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+          };
+          requestAnimationFrame(update);
+        };
+
+        // 5. Detonador de animaciones
+        setTimeout(() => {
+          const cardsContainer = document.getElementById('bloque-15-cards');
+          if(!cardsContainer) return;
+
+          cardsContainer.querySelectorAll('.counter').forEach(c => {
+            if(typeof animarDato === 'function') animarDato(c, parseFloat(c.getAttribute('data-target') || 0));
+          });
+          cardsContainer.querySelectorAll('.counter-dec').forEach(c => {
+            animarDatoDecimal(c, parseFloat(c.getAttribute('data-target') || 0));
+          });
+        }, 50);
+
+    })
+    .catch(error => console.error('Detalle del error en Bloque 15:', error));
   });
 
 // =========================================================================

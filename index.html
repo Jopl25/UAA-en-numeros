@@ -60,6 +60,7 @@
       line-height: 1.5;
       padding: 60px 24px 120px;
     }
+
     body::before {
       content: "";
       position: fixed;
@@ -98,9 +99,7 @@
       width: auto; 
       display: inline-block; 
       object-fit: contain; 
-      /* Pintamos el logo con el tono azul institucional exacto */
       background-color: var(--uaa-navy); 
-      /* Usamos la propia imagen como máscara recortable */
       -webkit-mask-image: url('Logo.png');
       mask-image: url('Logo.png');
       -webkit-mask-size: contain;
@@ -367,183 +366,183 @@
     .bar-chart-container .chart-bar-group.active .bar-value-label { font-size: 21px; color: var(--uaa-navy); transform: translateY(-5px) scale(1.1) !important; transition: all 0.15s ease !important; }
     .bar-chart-container .chart-bar-group.active .bar-column { filter: brightness(1.15) saturate(1.2); box-shadow: 0 10px 20px rgba(0,0,0,0.15), inset -4px 0 12px rgba(0,0,0,0.1), inset 4px 4px 10px rgba(255,255,255,0.4); transition: all 0.15s ease !important; }
   
-  /* --- WIDGET FLOTANTE DE NAVEGACIÓN --- */
-.floating-nav-wrapper {
-  position: fixed;
-  bottom: 32px;
-  right: 32px;
-  z-index: 9998;
-  touch-action: none; /* Evita conflicto de scroll nativo al arrastrar */
-  user-select: none;
-}
+    /* --- WIDGET FLOTANTE DE NAVEGACIÓN --- */
+    .floating-nav-wrapper {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      z-index: 9998;
+      touch-action: none; /* Evita conflicto de scroll nativo al arrastrar */
+      user-select: none;
+    }
 
-.nav-bubble {
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--uaa-navy), var(--uaa-teal));
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 10px 25px rgba(22, 48, 114, 0.35), inset 0 2px 4px rgba(255,255,255,0.7);
-  color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: grab;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-}
+    .nav-bubble {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--uaa-navy), var(--uaa-teal));
+      border: 1.5px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 10px 25px rgba(22, 48, 114, 0.35), inset 0 2px 4px rgba(255,255,255,0.7);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+    }
 
-.nav-bubble:active {
-  cursor: grabbing;
-  transform: scale(0.92);
-}
+    .nav-bubble:active {
+      cursor: grabbing;
+      transform: scale(0.92);
+    }
 
-.nav-bubble svg {
-  width: 24px;
-  height: 24px;
-  pointer-events: none;
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
+    .nav-bubble svg {
+      width: 24px;
+      height: 24px;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-.floating-nav-wrapper.menu-open .nav-bubble svg {
-  transform: rotate(90deg);
-}
+    .floating-nav-wrapper.menu-open .nav-bubble svg {
+      transform: rotate(90deg);
+    }
 
-.nav-glass-menu {
-  position: absolute;
-  bottom: 70px;
-  right: 0;
-  width: 280px;
-  max-height: 420px;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  border: 1px solid rgba(255, 255, 255, 1);
-  border-radius: 24px;
-  box-shadow: 0 20px 45px rgba(22, 48, 114, 0.22), inset 0 2px 4px rgba(255,255,255,0.9);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: scale(0.85) translateY(15px);
-  transform-origin: bottom right;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
+    .nav-glass-menu {
+      position: absolute;
+      bottom: 70px;
+      right: 0;
+      width: 280px;
+      max-height: 420px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 1);
+      border-radius: 24px;
+      box-shadow: 0 20px 45px rgba(22, 48, 114, 0.22), inset 0 2px 4px rgba(255,255,255,0.9);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.85) translateY(15px);
+      transform-origin: bottom right;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-.nav-glass-menu.open {
-  opacity: 1;
-  visibility: visible;
-  transform: scale(1) translateY(0);
-}
+    .nav-glass-menu.open {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1) translateY(0);
+    }
 
-.nav-menu-header {
-  padding: 14px 18px 10px;
-  border-bottom: 1px solid rgba(22, 48, 114, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    .nav-menu-header {
+      padding: 14px 18px 10px;
+      border-bottom: 1px solid rgba(22, 48, 114, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-.nav-menu-title {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--uaa-navy);
-}
+    .nav-menu-title {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--uaa-navy);
+    }
 
-.nav-menu-list {
-  list-style: none;
-  margin: 0;
-  padding: 8px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
+    .nav-menu-list {
+      list-style: none;
+      margin: 0;
+      padding: 8px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
 
-.nav-menu-item a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
+    .nav-menu-item a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
 
-.nav-menu-item a:hover {
-  background: rgba(21, 96, 130, 0.08);
-  color: var(--uaa-navy);
-  transform: translateX(3px);
-}
+    .nav-menu-item a:hover {
+      background: rgba(21, 96, 130, 0.08);
+      color: var(--uaa-navy);
+      transform: translateX(3px);
+    }
 
-.nav-badge-num {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--uaa-teal);
-  background: rgba(21, 96, 130, 0.12);
-  padding: 2px 6px;
-  border-radius: 6px;
-}
+    .nav-badge-num {
+      font-family: var(--font-display);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--uaa-teal);
+      background: rgba(21, 96, 130, 0.12);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
 
-.nav-tooltip {
-  position: absolute;
-  right: 75px; /* Empuja el texto a la izquierda de la burbuja */
-  bottom: 12px; /* Lo alinea verticalmente con la burbuja */
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 8px 16px;
-  border-radius: 99px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 25px rgba(22, 48, 114, 0.15);
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--uaa-navy);
-  white-space: nowrap;
-  pointer-events: none; /* Evita que estorbe si pasas el mouse rápido */
-  opacity: 0;
-  transform: translateX(15px); /* Inicia un poco movido a la derecha */
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
+    .nav-tooltip {
+      position: absolute;
+      right: 75px; /* Empuja el texto a la izquierda de la burbuja */
+      bottom: 12px; /* Lo alinea verticalmente con la burbuja */
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 8px 16px;
+      border-radius: 99px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 25px rgba(22, 48, 114, 0.15);
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--uaa-navy);
+      white-space: nowrap;
+      pointer-events: none; /* Evita que estorbe si pasas el mouse rápido */
+      opacity: 0;
+      transform: translateX(15px); /* Inicia un poco movido a la derecha */
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-/* Esta clase es la que usará JavaScript para hacerlo aparecer */
-.show-tooltip .nav-tooltip {
-  opacity: 1;
-  transform: translateX(0); /* Se desliza a su lugar original */
-}
+    /* Esta clase es la que usará JavaScript para hacerlo aparecer */
+    .show-tooltip .nav-tooltip {
+      opacity: 1;
+      transform: translateX(0); /* Se desliza a su lugar original */
+    }
   </style>
 
-<!-- Analytics -->
-<script type="text/javascript">
+  <!-- Analytics -->
+  <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "ymh5008s4u");
-</script>
+  </script>
 
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-RJ18T6PHS7"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-RJ18T6PHS7"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
 
-  gtag('config', 'G-RJ18T6PHS7');
-</script>
+    gtag('config', 'G-RJ18T6PHS7');
+  </script>
 
 </head>
 <body>
 
-<div class="container">
+  <div class="container">
 
     <!-- ENCABEZADO PRINCIPAL -->
     <header class="main-dashboard-header reveal">

@@ -2,10 +2,10 @@
 // =======================================================================
 // CONFIGURACIÓN GLOBAL
 // =======================================================================
-const USE_LOCAL_XLSX = true; // true = usa el archivo local .xlsx | false = Google Sheets
+const USE_LOCAL_XLSX = false; // true = usa el archivo local .xlsx | false = Google Sheets
 const LOCAL_XLSX_FILE = 'BD_UAA EN NUM.xlsx';
-// ID del documento de Google Sheets de donde se extrae la información.
-// Solo cambia esta constante si el documento fuente cambia.
+// ID del documento de Google Sheets de donde se extrae la información
+// Solo cambiar si el documento cambia
 const SPREADSHEET_ID = '1ZWcV0JuWVLMn4NmZFcjGE6D0R16Wuar5477HOvgILew';
 
 let localWorkbookPromise = null;
@@ -585,7 +585,10 @@ fetchSheetData('01_Matricula', true).then(data => {
     // 1. Textos
     const b1 = document.getElementById('bloque-01');
     if (b1) {
-        if (textosInterfase['PRIMERA LÍNEA']) b1.querySelector('.block-tag').innerHTML = `<span>01</span> ${textosInterfase['PRIMERA LÍNEA'].h}`;
+        if (textosInterfase['PRIMERA LÍNEA']) {
+            const b1Tag = document.getElementById('b1-tag-text') || b1.querySelector('.block-tag');
+            if (b1Tag) b1Tag.innerText = textosInterfase['PRIMERA LÍNEA'].h;
+        }
         if (textosInterfase['LÍNEA PRINCIPAL']) b1.querySelector('.block-title').innerText = textosInterfase['LÍNEA PRINCIPAL'].h;
         if (textosInterfase['INTRODUCCIÓN']) {
         b1.querySelector('.block-lead').innerHTML = `${textosInterfase['INTRODUCCIÓN'].h} <strong>${totalGlobal.toLocaleString('es-MX')} estudiantes</strong> ${textosInterfase['INTRODUCCIÓN'].i} <strong>${textosInterfase['INTRODUCCIÓN'].j}</strong>.`;
@@ -705,7 +708,10 @@ fetchSheetData('02_Oferta_Educativa').then(data => {
     if (!b2) return;
 
     // 1. Textos Generales
-    if (textosInterfase['PRIMERA LÍNEA']) b2.querySelector('.block-tag').innerHTML = `<span>02</span> ${textosInterfase['PRIMERA LÍNEA'].h}`;
+    if (textosInterfase['PRIMERA LÍNEA']) {
+        const b2Tag = document.getElementById('b2-tag-text') || b2.querySelector('.block-tag');
+        if (b2Tag) b2Tag.innerText = textosInterfase['PRIMERA LÍNEA'].h;
+    }
     if (textosInterfase['LÍNEA PRINCIPAL']) b2.querySelector('.block-title').innerText = textosInterfase['LÍNEA PRINCIPAL'].h;
     if (textosInterfase['INTRODUCCIÓN']) {
         b2.querySelector('.block-lead').innerHTML = `${textosInterfase['INTRODUCCIÓN'].h} <strong>${textosInterfase['INTRODUCCIÓN'].i}</strong>, ${textosInterfase['INTRODUCCIÓN'].j}`;
@@ -782,7 +788,10 @@ fetchSheetData('03_Acreditaciones').then(data => {
     if (!b3) return;
 
     // 1. Textos Generales del Bloque
-    if (textosInterfase['PRIMERA LÍNEA']) b3.querySelector('.block-tag').innerHTML = `<span>03</span> ${textosInterfase['PRIMERA LÍNEA']}`;
+    if (textosInterfase['PRIMERA LÍNEA']) {
+        const b3Tag = document.getElementById('b3-tag-text') || b3.querySelector('.block-tag');
+        if (b3Tag) b3Tag.innerText = textosInterfase['PRIMERA LÍNEA'];
+    }
     if (textosInterfase['LÍNEA PRINCIPAL']) b3.querySelector('.block-title').innerText = textosInterfase['LÍNEA PRINCIPAL'];
     if (textosInterfase['INTRODUCCIÓN']) b3.querySelector('.block-lead').innerHTML = textosInterfase['INTRODUCCIÓN'];
     if (textosInterfase['FECHA DE CORTE']) b3.querySelector('.block-date').innerText = `Corte al ${textosInterfase['FECHA DE CORTE'].toLowerCase()}`;

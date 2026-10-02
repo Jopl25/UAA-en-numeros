@@ -2254,19 +2254,29 @@ const chatbotClose = document.getElementById('chatbot-close');
 
 if (chatbotButton && chatbotWindow && chatbotClose) {
 
-    // Abrir chatbot
+    // Abrir chatbot con animación
     chatbotButton.addEventListener('click', () => {
 
         chatbotWindow.style.display = 'flex';
         chatbotButton.style.display = 'none';
 
+        // Forzar reflow para que la transición CSS se active
+        void chatbotWindow.offsetHeight;
+        chatbotWindow.classList.add('chatbot-open');
+
     });
 
-    // Cerrar chatbot
+    // Cerrar chatbot con animación
     chatbotClose.addEventListener('click', () => {
 
-        chatbotWindow.style.display = 'none';
-        chatbotButton.style.display = 'flex';
+        chatbotWindow.classList.remove('chatbot-open');
+
+        // Esperar a que termine la transición antes de ocultar
+        chatbotWindow.addEventListener('transitionend', function handler() {
+            chatbotWindow.removeEventListener('transitionend', handler);
+            chatbotWindow.style.display = 'none';
+            chatbotButton.style.display = 'flex';
+        });
 
     });
 

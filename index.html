@@ -1887,44 +1887,49 @@
     <!-- Ventana del chatbot -->
     <div id="chatbot-window" class="chatbot-window">
 
-      <!-- Encabezado -->
-      <div class="chatbot-header">
-
-        <div class="chatbot-header-info">
-
-          <div class="chatbot-avatar">
-            <span>UAA</span>
-          </div>
-
-          <div>
-            <div class="chatbot-title">
-              UAA en Números
-            </div>
-
-            <div class="chatbot-subtitle">
-              Asistente de Estadística Institucional
-            </div>
-          </div>
-
-        </div>
-
-        <button
-          id="chatbot-close"
-          class="chatbot-close"
-          aria-label="Cerrar asistente">
-          &times;
-        </button>
-
-      </div>
-
-      <!-- Mensajes -->
+      <!-- Botón cerrar flotante -->
+      <button
+        id="chatbot-close"
+        class="chatbot-close"
+        aria-label="Cerrar asistente">
+        &times;
+      </button>
       <div id="chatbot-messages" class="chatbot-messages">
 
+        <!-- Tarjeta de bienvenida con mascota -->
+        <div class="chatbot-welcome">
+          <img
+            src="assets/img/Robot_2.png"
+            alt="Asistente UAA en Números"
+            class="chatbot-welcome-mascot"
+          >
+          <div class="chatbot-welcome-text">
+            <span class="chatbot-welcome-hi">¡Hola!</span>
+            <span class="chatbot-welcome-sub">Soy tu asistente de</span>
+            <span class="chatbot-welcome-brand">UAA <em>EN</em> NÚMEROS</span>
+          </div>
+        </div>
+
+        <!-- Aviso de IA -->
+        <div class="chatbot-disclaimer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <p>
+            Este asistente utiliza inteligencia artificial y sus respuestas pueden contener errores.
+            La información es únicamente informativa y no tiene validez oficial.
+            Para datos oficiales, consulte al
+            <strong>Departamento de Estadística Institucional</strong>.
+          </p>
+        </div>
+
+        <!-- Mensaje inicial del bot -->
         <div class="chatbot-message bot-message">
 
           <div class="message-bubble">
-            Hola. Soy el asistente de <strong>UAA en Números</strong>.
-            <br><br>
             Puedo ayudarte a consultar información estadística institucional.
             ¿Qué te gustaría saber?
           </div>

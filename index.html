@@ -1896,17 +1896,19 @@
       </button>
       <div id="chatbot-messages" class="chatbot-messages">
 
-        <!-- Tarjeta de bienvenida con mascota -->
-        <div class="chatbot-welcome">
+        <!-- Tarjeta de bienvenida (Interior del chat) -->
+        <div class="chatbot-welcome inside-chat">
           <img
             src="assets/img/Robot_2.png"
             alt="Asistente UAA en Números"
             class="chatbot-welcome-mascot"
           >
-          <div class="chatbot-welcome-text">
-            <span class="chatbot-welcome-hi">¡Hola!</span>
-            <span class="chatbot-welcome-sub">Soy tu asistente de</span>
-            <span class="chatbot-welcome-brand">UAA <em>EN</em> NÚMEROS</span>
+          <div class="chatbot-welcome-bubble">
+            <div class="chatbot-welcome-text">
+              <span class="chatbot-welcome-hi">¡Hola!</span>
+              <span class="chatbot-welcome-sub">Soy tu asistente de</span>
+              <span class="chatbot-welcome-brand">UAA <em>EN</em> NÚMEROS</span>
+            </div>
           </div>
         </div>
 
@@ -1930,6 +1932,8 @@
         <div class="chatbot-message bot-message">
 
           <div class="message-bubble">
+            Hola. Soy el asistente de <strong>UAA en Números</strong>.
+            <br><br>
             Puedo ayudarte a consultar información estadística institucional.
             ¿Qué te gustaría saber?
           </div>
@@ -1983,30 +1987,26 @@
 
     </div>
 
-    <!-- Botón flotante -->
-    <button
-      id="chatbot-button"
-      class="chatbot-button"
-      aria-label="Abrir asistente UAA en Números"
-      title="Preguntar a UAA en Números">
+    <!-- Lanzador del chatbot (Botón + Teaser) -->
+    <div id="chatbot-launcher" class="chatbot-launcher">
 
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round">
+      <!-- Tarjeta teaser flotante con mascota -->
+      <div class="chatbot-welcome">
+        <img
+          src="assets/img/Robot_2.png"
+          alt="Asistente UAA en Números"
+          class="chatbot-welcome-mascot"
+        >
+        <div class="chatbot-welcome-bubble">
+          <div class="chatbot-welcome-text">
+            <span class="chatbot-welcome-hi">¡Hola!</span>
+            <span class="chatbot-welcome-sub">Soy tu asistente de</span>
+            <span class="chatbot-welcome-brand">UAA <em>EN</em> NÚMEROS</span>
+          </div>
+        </div>
+      </div>
 
-        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
-
-        <circle cx="9" cy="11" r="1"></circle>
-        <circle cx="12" cy="11" r="1"></circle>
-        <circle cx="15" cy="11" r="1"></circle>
-
-      </svg>
-
-    </button>
+    </div>
 
   </div>
 

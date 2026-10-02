@@ -2248,17 +2248,17 @@ fetchSheetData('Dudas').then(data => {
    Control de apertura y cierre
    ===================================================== */
 
-const chatbotButton = document.getElementById('chatbot-button');
+const chatbotLauncher = document.getElementById('chatbot-launcher');
 const chatbotWindow = document.getElementById('chatbot-window');
 const chatbotClose = document.getElementById('chatbot-close');
 
-if (chatbotButton && chatbotWindow && chatbotClose) {
+if (chatbotLauncher && chatbotWindow && chatbotClose) {
 
     // Abrir chatbot con animación
-    chatbotButton.addEventListener('click', () => {
+    chatbotLauncher.addEventListener('click', () => {
 
         chatbotWindow.style.display = 'flex';
-        chatbotButton.style.display = 'none';
+        chatbotLauncher.style.display = 'none';
 
         // Forzar reflow para que la transición CSS se active
         void chatbotWindow.offsetHeight;
@@ -2275,7 +2275,7 @@ if (chatbotButton && chatbotWindow && chatbotClose) {
         chatbotWindow.addEventListener('transitionend', function handler() {
             chatbotWindow.removeEventListener('transitionend', handler);
             chatbotWindow.style.display = 'none';
-            chatbotButton.style.display = 'flex';
+            chatbotLauncher.style.display = 'flex';
         });
 
     });

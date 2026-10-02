@@ -2242,3 +2242,179 @@ fetchSheetData('Dudas').then(data => {
     console.error('Detalle del error en Bloque Dudas:', error);
     });
 });
+
+/* =====================================================
+   CHATBOT UAA EN NÚMEROS
+   Control de apertura y cierre
+   ===================================================== */
+
+const chatbotButton = document.getElementById('chatbot-button');
+const chatbotWindow = document.getElementById('chatbot-window');
+const chatbotClose = document.getElementById('chatbot-close');
+
+if (chatbotButton && chatbotWindow && chatbotClose) {
+
+    // Abrir chatbot
+    chatbotButton.addEventListener('click', () => {
+
+        chatbotWindow.style.display = 'flex';
+        chatbotButton.style.display = 'none';
+
+    });
+
+    // Cerrar chatbot
+    chatbotClose.addEventListener('click', () => {
+
+        chatbotWindow.style.display = 'none';
+        chatbotButton.style.display = 'flex';
+
+    });
+
+}
+
+/* =====================================================
+   Envío de mensajes
+   ===================================================== */
+
+const chatbotInput = document.getElementById('chatbot-input');
+const chatbotSend = document.getElementById('chatbot-send');
+const chatbotMessages = document.getElementById('chatbot-messages');
+
+async function enviarMensajeChatbot() {
+
+    const pregunta = chatbotInput.value.trim();
+
+    // No enviar mensajes vacíos
+    if (!pregunta) {
+        return;
+    }
+
+    // Mostrar pregunta del usuario
+    const mensajeUsuario = document.createElement('div');
+
+    mensajeUsuario.className = 'chatbot-message user-message';
+
+    mensajeUsuario.innerHTML = `
+        <div class="message-bubble">
+            ${pregunta}
+        </div>
+    `;
+
+    chatbotMessages.appendChild(mensajeUsuario);
+
+    // Limpiar caja de texto
+    chatbotInput.value = '';
+
+    // Mostrar indicador de carga
+    const chatbotLoading = document.getElementById('chatbot-loading');
+
+    if (chatbotLoading) {
+        chatbotLoading.style.display = 'flex';
+    }
+
+    // Desplazar conversación hacia abajo
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+
+    try {
+
+        console.log('📩 Enviando pregunta a Render:', pregunta);
+
+        const response = await fetch(
+            'https://chatbot-uaa-en-numeros.onrender.com/api/chat',
+            {
+                method: 'POST',
+
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+
+                body: JSON.stringify({
+                    pregunta: pregunta
+                })
+            }
+        );
+
+        const resultado = await response.json();
+
+        console.log('📥 Respuesta de Render:', resultado);
+
+        if (!response.ok) {
+            throw new Error(
+                resultado.error || 'Error al comunicarse con el servidor.'
+            );
+        }
+
+        // Crear mensaje del bot
+        const mensajeBot = document.createElement('div');
+
+        mensajeBot.className = 'chatbot-message bot-message';
+
+        mensajeBot.innerHTML = `
+            <div class="message-bubble">
+                ${resultado.respuesta || 'No se recibió una respuesta.'}
+            </div>
+        `;
+
+        chatbotMessages.appendChild(mensajeBot);
+
+    } catch (error) {
+
+        console.error('❌ Error del chatbot:', error);
+
+        const mensajeError = document.createElement('div');
+
+        mensajeError.className = 'chatbot-message bot-message';
+
+        mensajeError.innerHTML = `
+            <div class="message-bubble">
+                Lo siento, ocurrió un problema al consultar la información. 
+                Por favor, intenta nuevamente.
+            </div>
+        `;
+
+        chatbotMessages.appendChild(mensajeError);
+
+    } finally {
+
+        // Ocultar indicador de carga
+        if (chatbotLoading) {
+            chatbotLoading.style.display = 'none';
+        }
+
+        // Llevar conversación al final
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+
+    }
+}
+
+
+/* Botón enviar */
+
+if (chatbotSend) {
+
+    chatbotSend.addEventListener('click', () => {
+
+        enviarMensajeChatbot();
+
+    });
+
+}
+
+
+/* Tecla Enter */
+
+if (chatbotInput) {
+
+    chatbotInput.addEventListener('keydown', (event) => {
+
+        if (event.key === 'Enter') {
+
+            event.preventDefault();
+
+            enviarMensajeChatbot();
+
+        }
+
+    });
+
+}

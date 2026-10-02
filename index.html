@@ -1878,6 +1878,133 @@
     <span id="copyToastText">Enlace copiado al portapapeles</span>
   </div>
 
+  <!-- =====================================================
+     CHATBOT UAA EN NÚMEROS
+     ===================================================== -->
+
+  <div id="chatbot-container" class="chatbot-container">
+
+    <!-- Ventana del chatbot -->
+    <div id="chatbot-window" class="chatbot-window">
+
+      <!-- Encabezado -->
+      <div class="chatbot-header">
+
+        <div class="chatbot-header-info">
+
+          <div class="chatbot-avatar">
+            <span>UAA</span>
+          </div>
+
+          <div>
+            <div class="chatbot-title">
+              UAA en Números
+            </div>
+
+            <div class="chatbot-subtitle">
+              Asistente de Estadística Institucional
+            </div>
+          </div>
+
+        </div>
+
+        <button
+          id="chatbot-close"
+          class="chatbot-close"
+          aria-label="Cerrar asistente">
+          &times;
+        </button>
+
+      </div>
+
+      <!-- Mensajes -->
+      <div id="chatbot-messages" class="chatbot-messages">
+
+        <div class="chatbot-message bot-message">
+
+          <div class="message-bubble">
+            Hola. Soy el asistente de <strong>UAA en Números</strong>.
+            <br><br>
+            Puedo ayudarte a consultar información estadística institucional.
+            ¿Qué te gustaría saber?
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Indicador de carga -->
+      <div
+        id="chatbot-loading"
+        class="chatbot-loading"
+        style="display:none;">
+
+        <span></span>
+        <span></span>
+        <span></span>
+
+      </div>
+
+      <!-- Entrada de pregunta -->
+      <div class="chatbot-input-area">
+
+        <input
+          type="text"
+          id="chatbot-input"
+          placeholder="Escribe tu pregunta..."
+          autocomplete="off"
+        >
+
+        <button
+          id="chatbot-send"
+          aria-label="Enviar pregunta">
+
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+
+          </svg>
+
+        </button>
+
+      </div>
+
+    </div>
+
+    <!-- Botón flotante -->
+    <button
+      id="chatbot-button"
+      class="chatbot-button"
+      aria-label="Abrir asistente UAA en Números"
+      title="Preguntar a UAA en Números">
+
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
+
+        <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path>
+
+        <circle cx="9" cy="11" r="1"></circle>
+        <circle cx="12" cy="11" r="1"></circle>
+        <circle cx="15" cy="11" r="1"></circle>
+
+      </svg>
+
+    </button>
+
+  </div>
+
   <script type="module" src="assets/js/script.js"></script>
 </body>
 

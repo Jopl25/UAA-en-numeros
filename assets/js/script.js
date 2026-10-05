@@ -536,6 +536,7 @@ fetchSheetData('01_Matricula', true).then(data => {
         'Educación Media': { mas: 0, fem: 0, x: 0, total: 0 },
         'Licenciatura': { mas: 0, fem: 0, x: 0, total: 0 },
         'Especialidades': { mas: 0, fem: 0, x: 0, total: 0 },
+        'Especialidades Médicas': { mas: 0, fem: 0, x: 0, total: 0 },
         'Maestría': { mas: 0, fem: 0, x: 0, total: 0 },
         'Doctorado': { mas: 0, fem: 0, x: 0, total: 0 }
     };
@@ -571,7 +572,7 @@ fetchSheetData('01_Matricula', true).then(data => {
         femGlobal += fem; 
         xGlobal += x;
 
-        let nivelClave = nivelOriginal === 'Especialidades Médicas' ? 'Especialidades' : nivelOriginal;
+        let nivelClave = nivelOriginal;
         if (nivelesResumen[nivelClave]) {
             nivelesResumen[nivelClave].mas += mas;
             nivelesResumen[nivelClave].fem += fem;
@@ -614,7 +615,7 @@ fetchSheetData('01_Matricula', true).then(data => {
 
     // 3. Tarjetas Mini
     const miniCards = document.querySelectorAll('.card-mini');
-    const ordenTarjetas = ['Educación Media', 'Licenciatura', 'Especialidades', 'Maestría', 'Doctorado'];
+    const ordenTarjetas = ['Educación Media', 'Licenciatura', 'Especialidades', 'Especialidades Médicas', 'Maestría', 'Doctorado'];
     miniCards.forEach((card, index) => {
         const datosNivel = nivelesResumen[ordenTarjetas[index]];
         if (!datosNivel) return;
@@ -633,6 +634,7 @@ fetchSheetData('01_Matricula', true).then(data => {
         genderData.licenciatura = { men: nivelesResumen['Licenciatura'].mas, women: nivelesResumen['Licenciatura'].fem, x: nivelesResumen['Licenciatura'].x, total: nivelesResumen['Licenciatura'].total };
         genderData.media = { men: nivelesResumen['Educación Media'].mas, women: nivelesResumen['Educación Media'].fem, x: nivelesResumen['Educación Media'].x, total: nivelesResumen['Educación Media'].total };
         genderData.especialidades = { men: nivelesResumen['Especialidades'].mas, women: nivelesResumen['Especialidades'].fem, x: nivelesResumen['Especialidades'].x, total: nivelesResumen['Especialidades'].total };
+        genderData.especialidadesMedicas = { men: nivelesResumen['Especialidades Médicas'].mas, women: nivelesResumen['Especialidades Médicas'].fem, x: nivelesResumen['Especialidades Médicas'].x, total: nivelesResumen['Especialidades Médicas'].total };
         genderData.maestria = { men: nivelesResumen['Maestría'].mas, women: nivelesResumen['Maestría'].fem, x: nivelesResumen['Maestría'].x, total: nivelesResumen['Maestría'].total };
         genderData.doctorado = { men: nivelesResumen['Doctorado'].mas, women: nivelesResumen['Doctorado'].fem, x: nivelesResumen['Doctorado'].x, total: nivelesResumen['Doctorado'].total };
 
@@ -2027,7 +2029,7 @@ fetchSheetData('14_Reportes').then(data => {
     if (reportes.length > 0) {
         document.getElementById('b14-c1-tag').innerText = reportes[0].cat;
         document.getElementById('b14-c1-title').innerText = reportes[0].titulo;
-        document.getElementById('b14-c1-badge').innerText = reportes[0].badge;
+        // document.getElementById('b14-c1-badge').innerText = reportes[0].badge;
         document.getElementById('b14-c1-desc').innerText = reportes[0].desc;
         
         const link1 = document.getElementById('b14-c1-link');
@@ -2039,7 +2041,7 @@ fetchSheetData('14_Reportes').then(data => {
     if (reportes.length > 1) {
         document.getElementById('b14-c2-tag').innerText = reportes[1].cat;
         document.getElementById('b14-c2-title').innerText = reportes[1].titulo;
-        document.getElementById('b14-c2-badge').innerText = reportes[1].badge;
+        // document.getElementById('b14-c2-badge').innerText = reportes[1].badge;
         document.getElementById('b14-c2-desc').innerText = reportes[1].desc;
         
         const link2 = document.getElementById('b14-c2-link');

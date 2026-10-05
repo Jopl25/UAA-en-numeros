@@ -709,6 +709,18 @@ fetchSheetData('02_Oferta_Educativa').then(data => {
     const b2 = document.getElementById('bloque-02');
     if (!b2) return;
 
+    // Nota del gráfico (Hoja 02_Oferta_Educativa, celda H6)
+    const notaGrafico = data[5]?.[7]?.trim();
+    const pieGrafico = document.getElementById('b2-chart-footnote');
+    if (notaGrafico && pieGrafico) {
+        const notaLimpia = notaGrafico.replace(/^\*Nota:\s*\*/i, '').trim();
+        pieGrafico.replaceChildren();
+        const etiquetaNota = document.createElement('strong');
+        etiquetaNota.textContent = 'Nota: ';
+        pieGrafico.append(etiquetaNota, document.createTextNode(notaLimpia));
+        pieGrafico.hidden = false;
+    }
+
     // 1. Textos Generales
     if (textosInterfase['PRIMERA LÍNEA']) {
         const b2Tag = document.getElementById('b2-tag-text') || b2.querySelector('.block-tag');

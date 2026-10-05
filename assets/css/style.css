@@ -1445,6 +1445,17 @@ body::before {
     color: var(--text-secondary);
 }
 
+.chart-footnote {
+    margin-top: 14px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.chart-footnote strong {
+    color: var(--text-secondary);
+}
+
 /* ==================== BLOQUE 03: BECAS Y APOYOS ==================== */
 .breakdown-list {
     margin-top: clamp(16px, 2.5vw, 30px);

@@ -2146,10 +2146,10 @@ a.email-link:hover {
 .chatbot-window {
     position: absolute;
     left: 0;
-    bottom: 80px;
+    bottom: 62px;
 
-    width: 390px;
-    height: 560px;
+    width: min(330px, calc(100vw - 50px));
+    height: min(650px, calc(100vh - 90px));
 
     background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(28px);
@@ -2317,9 +2317,9 @@ a.email-link:hover {
 .chatbot-welcome {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 
-    padding: 10px 10px 20px;
+    padding: 7px 7px 14px;
     margin-bottom: 0px;
 
     position: relative;
@@ -2333,7 +2333,7 @@ a.email-link:hover {
 }
 
 .chatbot-welcome-mascot {
-    width: 120px;
+    width: 84px;
     height: auto;
     flex-shrink: 0;
     object-fit: contain;
@@ -2354,8 +2354,8 @@ a.email-link:hover {
 .chatbot-welcome-bubble {
     position: relative;
     background: #ffffff;
-    border-radius: 20px;
-    padding: 16px 20px;
+    border-radius: 15px;
+    padding: 11px 14px;
     box-shadow: 0 8px 24px rgba(22, 48, 114, 0.12);
     z-index: 1;
 }
@@ -2386,7 +2386,7 @@ a.email-link:hover {
     position: relative;
     display: inline-block;
     font-family: var(--font-display);
-    font-size: 32px;
+    font-size: 23px;
     font-weight: 800;
     color: var(--uaa-navy);
     line-height: 1.1;
@@ -2421,7 +2421,7 @@ a.email-link:hover {
 
 .chatbot-welcome-sub {
     font-family: var(--font-sans);
-    font-size: 14px;
+    font-size: 10px;
     font-weight: 500;
     color: var(--uaa-navy);
     opacity: 0.85;
@@ -2430,7 +2430,7 @@ a.email-link:hover {
 
 .chatbot-welcome-brand {
     font-family: var(--font-display);
-    font-size: 18px;
+    font-size: 13px;
     font-weight: 800;
     color: var(--uaa-navy);
     letter-spacing: 0.02em;

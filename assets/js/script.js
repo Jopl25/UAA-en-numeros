@@ -8,6 +8,158 @@ const LOCAL_XLSX_FILE = 'BD_UAA EN NUM.xlsx';
 // Solo cambiar si el documento cambia
 const SPREADSHEET_ID = '1ZWcV0JuWVLMn4NmZFcjGE6D0R16Wuar5477HOvgILew';
 
+// =======================================================================
+// UTILIDADES DE SEGURIDAD (prevención de XSS)
+// Todo contenido proveniente de Google Sheets, del XLSX local o del
+// chatbot debe insertarse mediante setSafeHTML() / safeUrl().
+// =======================================================================
+
+// Etiquetas permitidas (formato de texto, tablas, imágenes y SVG decorativo)
+const SAFE_TAGS = new Set([
+    'a', 'b', 'strong', 'i', 'em', 'u', 's', 'small', 'mark', 'sup', 'sub', 'br', 'hr', 'p',
+    'span', 'div', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption',
+    'img',
+    'svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon',
+    'use', 'text', 'tspan', 'defs', 'lineargradient', 'radialgradient', 'stop'
+]);
+
+// Etiquetas que se eliminan por completo junto con su contenido
+const DROP_TAGS = new Set([
+    'script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet',
+    'link', 'meta', 'base', 'form', 'input', 'button', 'textarea', 'select', 'option',
+    'template', 'noscript', 'xmp', 'plaintext', 'noembed', 'noframes', 'math',
+    'foreignobject', 'animate', 'animatetransform', 'animatemotion', 'set', 'audio', 'video', 'source', 'track'
+]);
+
+// Atributos permitidos (además de data-* y aria-*)
+const SAFE_ATTRS = new Set([
+    'class', 'style', 'title', 'alt', 'role', 'target', 'rel', 'href', 'src',
+    'width', 'height', 'colspan', 'rowspan', 'lang', 'dir',
+    'viewbox', 'fill', 'fill-opacity', 'fill-rule', 'clip-rule', 'opacity', 'stroke', 'stroke-width',
+    'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity',
+    'stroke-miterlimit', 'd', 'points', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
+    'dx', 'dy', 'transform', 'offset', 'stop-color', 'stop-opacity', 'text-anchor',
+    'dominant-baseline', 'font-size', 'font-weight', 'preserveaspectratio', 'xmlns', 'xlink:href'
+]);
+
+const SAFE_URL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
+
+/**
+ * Devuelve la URL si es segura (http, https, mailto, tel, relativa o ancla).
+ * Cualquier otro esquema (javascript:, data:, vbscript:, etc.) se reemplaza por '#'.
+ */
+function safeUrl(url, { allowDataImage = false } = {}) {
+    const raw = String(url ?? '').trim();
+    if (!raw) return '';
+    // Se eliminan caracteres de control/espacios que los navegadores ignoran (p. ej. "java\tscript:")
+    const compact = raw.replace(/[\u0000-\u0020\u007F-\u009F]/g, '');
+    // Los navegadores interpretan //host y \\host como URL externa aunque no tenga esquema.
+    // Se admiten rutas relativas y anclas, pero no referencias protocol-relative.
+    if (/^[\\/]{2}/.test(compact)) return '#';
+    const match = compact.match(/^([a-z][a-z0-9+.\-]*):/i);
+    if (!match) return raw; // URL relativa, ancla (#) o ruta local
+    const protocol = match[1].toLowerCase() + ':';
+    if (SAFE_URL_PROTOCOLS.has(protocol)) return raw;
+    if (allowDataImage && /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(compact)) return raw;
+    return '#';
+}
+
+/**
+ * Comprueba estilos inline contra escapes y comentarios CSS antes de aceptarlos.
+ * El navegador decodifica escapes CSS (por ejemplo, u\\72l() equivale a url()),
+ * por lo que la comprobación debe hacerse sobre una forma normalizada.
+ */
+function hasUnsafeCss(value) {
+    const normalized = String(value ?? '')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\\(?:\r\n|[\r\n\f])/g, '')
+        .replace(/\\([0-9a-f]{1,6})\s?/gi, (_, hex) => {
+            const codePoint = parseInt(hex, 16);
+            return codePoint === 0 || codePoint > 0x10ffff ? '\uFFFD' : String.fromCodePoint(codePoint);
+        })
+        .replace(/\\([^\r\n0-9a-f])/gi, '$1')
+        .toLowerCase();
+    return /url\s*\(|expression\s*\(|@import|behavior\s*:|-moz-binding|\bbinding\s*:|javascript\s*:|vbscript\s*:|data\s*:/i.test(normalized);
+}
+
+function cleanNodeTree(parent) {
+    for (const node of Array.from(parent.childNodes)) {
+        if (node.nodeType === Node.TEXT_NODE) continue;
+        if (node.nodeType !== Node.ELEMENT_NODE) { node.remove(); continue; } // comentarios, etc.
+
+        const tag = node.localName.toLowerCase();
+        if (DROP_TAGS.has(tag)) { node.remove(); continue; }
+        if (!SAFE_TAGS.has(tag)) {
+            // Etiqueta desconocida: se conserva solo su contenido (ya saneado)
+            cleanNodeTree(node);
+            node.replaceWith(...Array.from(node.childNodes));
+            continue;
+        }
+
+        for (const attr of Array.from(node.attributes)) {
+            const name = attr.name.toLowerCase();
+            const value = attr.value;
+            const allowed = SAFE_ATTRS.has(name) || /^data-[\w\-]+$/.test(name) || /^aria-[\w\-]+$/.test(name);
+            if (!allowed || name.startsWith('on')) { node.removeAttribute(attr.name); continue; }
+
+            if (name === 'href' || name === 'xlink:href') {
+                if (tag === 'use') {
+                    // <use> solo puede referenciar símbolos internos del documento
+                    if (!value.trim().startsWith('#')) node.removeAttribute(attr.name);
+                } else {
+                    node.setAttribute(attr.name, safeUrl(value));
+                }
+            } else if (name === 'src') {
+                node.setAttribute(attr.name, safeUrl(value, { allowDataImage: true }));
+            } else if (name === 'style') {
+                if (hasUnsafeCss(value)) {
+                    node.removeAttribute(attr.name);
+                }
+            }
+        }
+
+        if (tag === 'a' && (node.getAttribute('target') || '').toLowerCase() === '_blank') {
+            node.setAttribute('rel', 'noopener noreferrer');
+        }
+
+        cleanNodeTree(node);
+    }
+}
+
+/** Convierte una cadena HTML en un fragmento DOM saneado (sin ejecutar nada). */
+function sanitizeHTML(html) {
+    const tpl = document.createElement('template'); // documento inerte: no ejecuta scripts ni carga recursos
+    tpl.innerHTML = String(html ?? '');
+    cleanNodeTree(tpl.content);
+    return tpl.content;
+}
+
+/** Reemplazo seguro de `elemento.innerHTML = html`. */
+function setSafeHTML(element, html) {
+    if (!element) return;
+    element.replaceChildren(sanitizeHTML(html));
+}
+
+/** Escapa caracteres especiales para interpolar texto plano dentro de HTML o de atributos. */
+function escapeHTML(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/** Obtiene el elemento destino de un hash (#id) sin usar querySelector (evita excepciones con selectores inválidos). */
+function getElementFromHash(hash) {
+    if (!hash || hash === '#') return null;
+    let id = String(hash).replace(/^#/, '');
+    try { id = decodeURIComponent(id); } catch (_) { /* hash mal codificado: se usa tal cual */ }
+    return id ? document.getElementById(id) : null;
+}
+
 let localWorkbookPromise = null;
 
 function getLocalWorkbook() {
@@ -163,9 +315,21 @@ interactiveCards.forEach(card => {
 });
 
 // 5. Control de Modal
-document.getElementById('modalCentros').addEventListener('click', function(e) {
-    if (e.target === this) this.classList.remove('open');
-});
+const modalCentros = document.getElementById('modalCentros');
+const botonAbrirModalCentros = document.getElementById('open-modal-centros');
+const botonCerrarModalCentros = document.getElementById('close-modal-centros');
+
+if (modalCentros) {
+    if (botonAbrirModalCentros) {
+        botonAbrirModalCentros.addEventListener('click', () => modalCentros.classList.add('open'));
+    }
+    if (botonCerrarModalCentros) {
+        botonCerrarModalCentros.addEventListener('click', () => modalCentros.classList.remove('open'));
+    }
+    modalCentros.addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('open');
+    });
+}
 
 // 6. Lógica del Pictograma Líquido
 const genderData = {
@@ -419,7 +583,7 @@ function initSmoothScrollAndHeaderLinks() {
         const targetId = link.getAttribute('href');
         if (!targetId || targetId === '#') return;
 
-        const targetEl = document.querySelector(targetId);
+        const targetEl = getElementFromHash(targetId);
         if (targetEl) {
             e.preventDefault();
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -430,7 +594,7 @@ function initSmoothScrollAndHeaderLinks() {
     // 2. Soporte para URL con hash al cargar la página
     if (window.location.hash) {
         const scrollToHash = () => {
-            const targetEl = document.querySelector(window.location.hash);
+            const targetEl = getElementFromHash(window.location.hash);
             if (targetEl) {
                 targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -445,7 +609,7 @@ function initSmoothScrollAndHeaderLinks() {
     // 3. Soporte para evento hashchange
     window.addEventListener('hashchange', () => {
         if (window.location.hash) {
-            const targetEl = document.querySelector(window.location.hash);
+            const targetEl = getElementFromHash(window.location.hash);
             if (targetEl) {
                 targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -592,7 +756,7 @@ fetchSheetData('01_Matricula', true).then(data => {
         }
         if (textosInterfase['LÍNEA PRINCIPAL']) b1.querySelector('.block-title').innerText = textosInterfase['LÍNEA PRINCIPAL'].h;
         if (textosInterfase['INTRODUCCIÓN']) {
-        b1.querySelector('.block-lead').innerHTML = `${textosInterfase['INTRODUCCIÓN'].h} <strong>${totalGlobal.toLocaleString('es-MX')} estudiantes</strong> ${textosInterfase['INTRODUCCIÓN'].i} <strong>${textosInterfase['INTRODUCCIÓN'].j}</strong>.`;
+        setSafeHTML(b1.querySelector('.block-lead'), `${textosInterfase['INTRODUCCIÓN'].h} <strong>${totalGlobal.toLocaleString('es-MX')} estudiantes</strong> ${textosInterfase['INTRODUCCIÓN'].i} <strong>${textosInterfase['INTRODUCCIÓN'].j}</strong>.`);
         }
         // NUEVO: Fecha de corte automatizada
         if (textosInterfase['FECHA DE CORTE']) {
@@ -605,7 +769,7 @@ fetchSheetData('01_Matricula', true).then(data => {
     const genderTitle = document.querySelector('.gender-card-title-group h3');
     const genderSub = document.querySelector('.gender-card-title-group p');
 
-    if (heroLbl && textosInterfase['TARJETA 1 PRIMERA LÍNEA']) heroLbl.innerHTML = textosInterfase['TARJETA 1 PRIMERA LÍNEA'].h;
+    if (heroLbl && textosInterfase['TARJETA 1 PRIMERA LÍNEA']) setSafeHTML(heroLbl, textosInterfase['TARJETA 1 PRIMERA LÍNEA'].h);
     if (heroDesc && textosInterfase['TARJETA 1 PRINCIPAL']) heroDesc.innerText = textosInterfase['TARJETA 1 PRINCIPAL'].h;
     if (genderTitle && textosInterfase['TÍTULO GRÁFICO']) genderTitle.innerText = textosInterfase['TÍTULO GRÁFICO'].h;
     if (genderSub && textosInterfase['SUBTÍTULO']) genderSub.innerText = textosInterfase['SUBTÍTULO'].h;
@@ -666,7 +830,7 @@ fetchSheetData('01_Matricula', true).then(data => {
     });
     
     const tbody = document.querySelector('.glass-table tbody');
-    if (tbody) tbody.innerHTML = htmlTabla;
+    if (tbody) setSafeHTML(tbody, htmlTabla);
     })
     .catch(error => {
     console.error('Detalle del error en Bloque 01:', error);
@@ -728,18 +892,18 @@ fetchSheetData('02_Oferta_Educativa').then(data => {
     }
     if (textosInterfase['LÍNEA PRINCIPAL']) b2.querySelector('.block-title').innerText = textosInterfase['LÍNEA PRINCIPAL'].h;
     if (textosInterfase['INTRODUCCIÓN']) {
-        b2.querySelector('.block-lead').innerHTML = `${textosInterfase['INTRODUCCIÓN'].h} <strong>${textosInterfase['INTRODUCCIÓN'].i}</strong>, ${textosInterfase['INTRODUCCIÓN'].j}`;
+        setSafeHTML(b2.querySelector('.block-lead'), `${textosInterfase['INTRODUCCIÓN'].h} <strong>${textosInterfase['INTRODUCCIÓN'].i}</strong>, ${textosInterfase['INTRODUCCIÓN'].j}`);
     }
 
     // 2. Links / Botones de acción
     const links = b2.querySelectorAll('.block-action-link');
     if (textosInterfase['LINK 1'] && links.length > 0) {
-        links[0].innerHTML = `${textosInterfase['LINK 1'].h} &#8599;`;
-        links[0].href = textosInterfase['LINK 1'].i;
+        setSafeHTML(links[0], `${textosInterfase['LINK 1'].h} &#8599;`);
+        links[0].href = safeUrl(textosInterfase['LINK 1'].i);
     }
     if (textosInterfase['LINK 2'] && links.length > 1) {
-        links[1].innerHTML = `${textosInterfase['LINK 2'].h} &#8599;`;
-        links[1].href = textosInterfase['LINK 2'].i;
+        setSafeHTML(links[1], `${textosInterfase['LINK 2'].h} &#8599;`);
+        links[1].href = safeUrl(textosInterfase['LINK 2'].i);
     }
 
     // 3. Programas y Lugares Ofertados (Usando document para abarcar toda la sección)
@@ -807,7 +971,7 @@ fetchSheetData('03_Acreditaciones').then(data => {
         if (b3Tag) b3Tag.innerText = textosInterfase['PRIMERA LÍNEA'];
     }
     if (textosInterfase['LÍNEA PRINCIPAL']) b3.querySelector('.block-title').innerText = textosInterfase['LÍNEA PRINCIPAL'];
-    if (textosInterfase['INTRODUCCIÓN']) b3.querySelector('.block-lead').innerHTML = textosInterfase['INTRODUCCIÓN'];
+    if (textosInterfase['INTRODUCCIÓN']) setSafeHTML(b3.querySelector('.block-lead'), textosInterfase['INTRODUCCIÓN']);
     if (textosInterfase['FECHA DE CORTE']) b3.querySelector('.block-date').innerText = `Corte al ${textosInterfase['FECHA DE CORTE'].toLowerCase()}`;
 
     // 2. Tarjeta 1 (Reconstruyendo el texto con los números 64, 63 y el 100%)
@@ -823,7 +987,7 @@ fetchSheetData('03_Acreditaciones').then(data => {
         // Inyectar párrafo dinámico con el total (64) y acreditados (63)
         const t1Desc = document.querySelector('.t1-desc');
         if (t1Desc) {
-        t1Desc.innerHTML = `Del total de <strong>${t1.total} programas educativos</strong> de licenciatura, ${t1.ofertables} son evaluables; el <strong>100%</strong> de ellos están acreditados y reconocidos por algún organismo nacional.`;
+        setSafeHTML(t1Desc, `Del total de <strong>${t1.total} programas educativos</strong> de licenciatura, ${t1.ofertables} son evaluables; el <strong>100%</strong> de ellos están acreditados y reconocidos por algún organismo nacional.`);
         }
     }
     if (textosInterfase['TARJETA 1 PRIMERA LÍNEA']) document.querySelector('.t1-tag').innerText = textosInterfase['TARJETA 1 PRIMERA LÍNEA'];
@@ -844,7 +1008,7 @@ fetchSheetData('03_Acreditaciones').then(data => {
     // Reconstruir el texto inyectando el porcentaje y el nombre del sistema en negritas
     const t2Desc = document.querySelector('.t2-desc');
     if (t2Desc) {
-        t2Desc.innerHTML = `El <strong>${porcentajeT2}%</strong> de nuestros programas educativos de posgrado ofertables se encuentran avalados y vigentes en el <strong>Sistema Nacional de Posgrados (SNP)</strong>.`;
+        setSafeHTML(t2Desc, `El <strong>${porcentajeT2}%</strong> de nuestros programas educativos de posgrado ofertables se encuentran avalados y vigentes en el <strong>Sistema Nacional de Posgrados (SNP)</strong>.`);
     }
     if (textosInterfase['TARJETA 2 COMENTARIO']) document.querySelector('.t2-footer').innerText = textosInterfase['TARJETA 2 COMENTARIO'];
     
@@ -858,7 +1022,7 @@ fetchSheetData('03_Acreditaciones').then(data => {
     if (textosInterfase['TARJETA 3 PRIMERA LÍNEA']) document.querySelector('.t3-tag').innerText = textosInterfase['TARJETA 3 PRIMERA LÍNEA'];
     if (textosInterfase['TARJETA 3 PRINCIPAL']) document.querySelector('.t3-title').innerText = textosInterfase['TARJETA 3 PRINCIPAL'];
     if (textosInterfase['TARJETA 3 SECUNDARIA']) document.querySelector('.t3-sub').innerText = textosInterfase['TARJETA 3 SECUNDARIA'];
-    if (textosInterfase['TARJETA 3 COMENTARIO']) document.querySelector('.t3-desc').innerHTML = textosInterfase['TARJETA 3 COMENTARIO'];
+    if (textosInterfase['TARJETA 3 COMENTARIO']) setSafeHTML(document.querySelector('.t3-desc'), textosInterfase['TARJETA 3 COMENTARIO']);
 
     // 5. Tarjeta 4 (Padrón EGEL)
     if (filasAcreditaciones.length > 3) {
@@ -867,7 +1031,7 @@ fetchSheetData('03_Acreditaciones').then(data => {
     if (textosInterfase['TARJETA 4 PRIMERA LÍNEA']) document.querySelector('.t4-tag').innerText = textosInterfase['TARJETA 4 PRIMERA LÍNEA'];
     if (textosInterfase['TARJETA 4 PRINCIPAL']) document.querySelector('.t4-title').innerText = textosInterfase['TARJETA 4 PRINCIPAL'];
     if (textosInterfase['TARJETA 4 SECUNDARIA']) document.querySelector('.t4-sub').innerText = textosInterfase['TARJETA 4 SECUNDARIA'];
-    if (textosInterfase['TARJETA 4 COMENTARIO']) document.querySelector('.t4-desc').innerHTML = textosInterfase['TARJETA 4 COMENTARIO'];
+    if (textosInterfase['TARJETA 4 COMENTARIO']) setSafeHTML(document.querySelector('.t4-desc'), textosInterfase['TARJETA 4 COMENTARIO']);
 
     // 6. Tarjeta 5 (Posgrados Globales)
     if (filasAcreditaciones.length > 4) {
@@ -876,7 +1040,7 @@ fetchSheetData('03_Acreditaciones').then(data => {
     if (textosInterfase['TARJETA 5 PRIMERA LÍNEA']) document.querySelector('.t5-tag').innerText = textosInterfase['TARJETA 5 PRIMERA LÍNEA'];
     if (textosInterfase['TARJETA 5 PRINCIPAL']) document.querySelector('.t5-title').innerText = textosInterfase['TARJETA 5 PRINCIPAL'];
     if (textosInterfase['TARJETA 5 SECUNDARIA']) document.querySelector('.t5-sub').innerText = textosInterfase['TARJETA 5 SECUNDARIA'];
-    if (textosInterfase['TARJETA 5 COMENTARIO']) document.querySelector('.t5-desc').innerHTML = textosInterfase['TARJETA 5 COMENTARIO'];
+    if (textosInterfase['TARJETA 5 COMENTARIO']) setSafeHTML(document.querySelector('.t5-desc'), textosInterfase['TARJETA 5 COMENTARIO']);
 
     })
     .catch(error => {
@@ -927,8 +1091,8 @@ fetchSheetData('04_Becas').then(data => {
     if (textosInterfase['FECHA DE CORTE']) document.getElementById('b4-date').innerText = `Corte al ${textosInterfase['FECHA DE CORTE'].h.toLowerCase()}`;
     if (textosInterfase['LINK']) {
         const link = document.getElementById('b4-link');
-        link.innerHTML = `${textosInterfase['LINK'].h} &#8599;`;
-        link.href = textosInterfase['LINK'].i;
+        setSafeHTML(link, `${textosInterfase['LINK'].h} &#8599;`);
+        link.href = safeUrl(textosInterfase['LINK'].i);
     }
 
     // 2. Tarjeta Inversión Total
@@ -944,7 +1108,7 @@ fetchSheetData('04_Becas').then(data => {
             <div class="progress-track"><div class="progress-fill" data-value="${inv.valor}" data-total="${totalInversion}" style="background: #565D6D; width: 0%;"></div></div>
         </div>`;
     });
-    document.getElementById('b4-breakdown').innerHTML = htmlBreakdown;
+    setSafeHTML(document.getElementById('b4-breakdown'), htmlBreakdown);
 
     // 3. Tarjeta Beneficiarios
     if (textosInterfase['TARJETA 2 PRIMERA LÍNEA']) document.getElementById('b4-t2-tag').innerText = textosInterfase['TARJETA 2 PRIMERA LÍNEA'].h;
@@ -958,7 +1122,7 @@ fetchSheetData('04_Becas').then(data => {
         htmlBeneficiarios += `
         <div class="beneficiary-row"><span class="beneficiary-num counter" data-target="${ben.valor}">0</span><span class="beneficiary-text">${ben.rubro}</span></div>`;
     });
-    document.getElementById('b4-beneficiarios').innerHTML = htmlBeneficiarios;
+    setSafeHTML(document.getElementById('b4-beneficiarios'), htmlBeneficiarios);
 
     // 4. Histórico de Becas
     const minYear = historico.length > 0 ? historico[0].anio : '2018';
@@ -979,8 +1143,8 @@ fetchSheetData('04_Becas').then(data => {
     const historyChart = document.getElementById('b4-history-chart');
     const historyXaxis = document.getElementById('b4-history-xaxis');
 
-    historyChart.innerHTML = htmlBars;
-    historyXaxis.innerHTML = htmlXAxis;
+    setSafeHTML(historyChart, htmlBars);
+    setSafeHTML(historyXaxis, htmlXAxis);
 
     // ESTA ES LA SOLUCIÓN: Sobrescribe el CSS para que la cuadrícula 
     // tenga exactamente tantas columnas como años haya en Google Sheets
@@ -1077,7 +1241,7 @@ fetchSheetData('05_Egresados').then(data => {
         if (textosInterfase['INTRODUCCIÓN'].i) {
         introHTML += ` <strong>${textosInterfase['INTRODUCCIÓN'].i}</strong>.`;
         }
-        document.getElementById('b5-lead').innerHTML = introHTML;
+        setSafeHTML(document.getElementById('b5-lead'), introHTML);
     }
 
     if (textosInterfase['FECHA DE CORTE']) document.getElementById('b5-date').innerText = `Corte al ${textosInterfase['FECHA DE CORTE'].h.toLowerCase()}`;
@@ -1104,7 +1268,7 @@ fetchSheetData('05_Egresados').then(data => {
             <div class="progress-track"><div class="progress-fill" data-value="${niv.valor}" data-total="${totalEgresados}" style="background: ${color}; width: 0%;"></div></div>
         </div>`;
     });
-    document.getElementById('b5-breakdown').innerHTML = htmlBreakdown;
+    setSafeHTML(document.getElementById('b5-breakdown'), htmlBreakdown);
 
     // 3. Tarjeta Gráfica de Dona (Lado derecho)
     if (textosInterfase['TARJETA 2 PRIMERA LÍNEA']) document.getElementById('b5-t2-tag').innerText = textosInterfase['TARJETA 2 PRIMERA LÍNEA'].h;
@@ -1158,7 +1322,7 @@ fetchSheetData('05_Egresados').then(data => {
         </div>
         </div>
     `;
-    document.getElementById('b5-donut-container').innerHTML = htmlDonutFull;
+    setSafeHTML(document.getElementById('b5-donut-container'), htmlDonutFull);
 
     // =========================================================================
     // DETONADOR DE ANIMACIONES
@@ -1242,7 +1406,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
     if (textosInterfase['INTRODUCCIÓN']) {
         let intro = textosInterfase['INTRODUCCIÓN'].h;
         if (textosInterfase['INTRODUCCIÓN'].i) intro += ` <strong>${textosInterfase['INTRODUCCIÓN'].i}</strong>.`;
-        document.getElementById('b6-lead').innerHTML = intro;
+        setSafeHTML(document.getElementById('b6-lead'), intro);
     }
     if (textosInterfase['FECHA DE CORTE']) document.getElementById('b6-date').innerText = `Corte al ${textosInterfase['FECHA DE CORTE'].h.toLowerCase()}`;
 
@@ -1255,7 +1419,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
     let profesores = totalPlantilla - tecnicosAc;
 
     document.getElementById('b6-total-plantilla').setAttribute('data-target', totalPlantilla);
-    document.getElementById('b6-plantilla-texto').innerHTML = `Conformado por <strong>${profesores.toLocaleString('es-MX')} profesores</strong> de distintas dedicaciones y <strong>${tecnicosAc.toLocaleString('es-MX')} Técnicos Académicos</strong> especializados.`;
+    setSafeHTML(document.getElementById('b6-plantilla-texto'), `Conformado por <strong>${profesores.toLocaleString('es-MX')} profesores</strong> de distintas dedicaciones y <strong>${tecnicosAc.toLocaleString('es-MX')} Técnicos Académicos</strong> especializados.`);
 
     // 3. Tarjeta 2: Tipos de Contratación (Barras)
     if (textosInterfase['TARJETA 2 PRIMERA LÍNEA']) document.getElementById('b6-t2-tag').innerText = textosInterfase['TARJETA 2 PRIMERA LÍNEA'].h;
@@ -1272,7 +1436,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
             <div class="progress-track"><div class="progress-fill" style="width: 0%; background: ${color};" data-percent="${pct.toFixed(1)}%"></div></div>
         </div>`;
     });
-    document.getElementById('b6-bars-contratacion').innerHTML = htmlContratacion;
+    setSafeHTML(document.getElementById('b6-bars-contratacion'), htmlContratacion);
 
     // 4. Tarjeta 3: SNII
     if (textosInterfase['TARJETA 3 PRIMERA LÍNEA']) document.getElementById('b6-t3-tag').innerText = textosInterfase['TARJETA 3 PRIMERA LÍNEA'].h;
@@ -1280,7 +1444,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
     
     let totalSnii = sniiNivel.reduce((sum, item) => sum + item.valor, 0);
     document.getElementById('b6-snii-total').setAttribute('data-target', totalSnii);
-    document.getElementById('b6-snii-texto').innerHTML = `Profesores con distinción SNII (<strong>${sniiGen.mujeres} mujeres</strong> y <strong>${sniiGen.hombres} hombres</strong>).`;
+    setSafeHTML(document.getElementById('b6-snii-texto'), `Profesores con distinción SNII (<strong>${sniiGen.mujeres} mujeres</strong> y <strong>${sniiGen.hombres} hombres</strong>).`);
 
     let htmlSnii = '';
     sniiNivel.forEach(n => {
@@ -1290,7 +1454,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
             <div class="progress-track"><div class="progress-fill" data-value="${n.valor}" data-total="${totalSnii}" style="background: #565D6D; width: 0%;"></div></div>
         </div>`;
     });
-    document.getElementById('b6-snii-breakdown').innerHTML = htmlSnii;
+    setSafeHTML(document.getElementById('b6-snii-breakdown'), htmlSnii);
 
     // 5. Tarjeta 4: PRODEP
     if (textosInterfase['TARJETA 4 PRIMERA LÍNEA']) document.getElementById('b6-t4-tag').innerText = textosInterfase['TARJETA 4 PRIMERA LÍNEA'].h;
@@ -1298,7 +1462,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
 
     let totalProdep = prodepGen.mujeres + prodepGen.hombres;
     document.getElementById('b6-prodep-total').setAttribute('data-target', totalProdep);
-    document.getElementById('b6-prodep-texto').innerHTML = `Fortalecimiento de las funciones sustantivas de la institución, integrado por <strong>${prodepGen.mujeres} mujeres</strong> y <strong>${prodepGen.hombres} hombres</strong> con reconocimiento vigente.`;
+    setSafeHTML(document.getElementById('b6-prodep-texto'), `Fortalecimiento de las funciones sustantivas de la institución, integrado por <strong>${prodepGen.mujeres} mujeres</strong> y <strong>${prodepGen.hombres} hombres</strong> con reconocimiento vigente.`);
 
     // 6. Tarjeta 5: Cuerpos Académicos
     if (textosInterfase['TARJETA 5 PRIMERA LÍNEA']) document.getElementById('b6-t5-tag').innerText = textosInterfase['TARJETA 5 PRIMERA LÍNEA'].h;
@@ -1501,7 +1665,7 @@ fetchSheetData('08_Publicaciones').then(data => {
         </tr>
     `;
 
-    document.getElementById('b8-table-body').innerHTML = htmlTabla;
+    setSafeHTML(document.getElementById('b8-table-body'), htmlTabla);
 
     // =========================================================================
     // DETONADOR DE ANIMACIONES
@@ -1567,8 +1731,8 @@ fetchSheetData('09_Patentes').then(data => {
     
     if (textosInterfase['LINK SUPERIOR']) {
         const linkSup = document.getElementById('b9-link-sup');
-        linkSup.innerHTML = `${textosInterfase['LINK SUPERIOR'].h} &#8599;`;
-        linkSup.href = textosInterfase['LINK SUPERIOR'].i;
+        setSafeHTML(linkSup, `${textosInterfase['LINK SUPERIOR'].h} &#8599;`);
+        linkSup.href = safeUrl(textosInterfase['LINK SUPERIOR'].i);
     }
 
     // 2. Tarjeta Patentes
@@ -1577,8 +1741,8 @@ fetchSheetData('09_Patentes').then(data => {
     
     if (textosInterfase['TARJETA 1 LINK']) {
         const t1Link = document.getElementById('b9-t1-link');
-        t1Link.innerHTML = `${textosInterfase['TARJETA 1 LINK'].h} &#8599;`;
-        t1Link.href = textosInterfase['TARJETA 1 LINK'].i;
+        setSafeHTML(t1Link, `${textosInterfase['TARJETA 1 LINK'].h} &#8599;`);
+        t1Link.href = safeUrl(textosInterfase['TARJETA 1 LINK'].i);
     }
 
     document.getElementById('b9-total-num').setAttribute('data-target', totalPatentes);
@@ -1650,13 +1814,13 @@ fetchSheetData('10_Editorial').then(data => {
 
     // 2. Tarjetas Individuales
     document.getElementById('b10-impresas-num').setAttribute('data-target', impresas);
-    document.getElementById('b10-impresas-desc').innerHTML = `Obras editoriales impresas publicadas durante el ejercicio <strong>${anioCorte}</strong>.`;
+    setSafeHTML(document.getElementById('b10-impresas-desc'), `Obras editoriales impresas publicadas durante el ejercicio <strong>${anioCorte}</strong>.`);
 
     document.getElementById('b10-digitales-num').setAttribute('data-target', digitales);
-    document.getElementById('b10-digitales-desc').innerHTML = `Obras editoriales digitales publicadas durante el ejercicio <strong>${anioCorte}</strong>.`;
+    setSafeHTML(document.getElementById('b10-digitales-desc'), `Obras editoriales digitales publicadas durante el ejercicio <strong>${anioCorte}</strong>.`);
 
     document.getElementById('b10-revistas-num').setAttribute('data-target', revistas);
-    document.getElementById('b10-revistas-desc').innerHTML = `Revistas publicadas en diferentes formatos y periodicidad durante el ejercicio <strong>${anioCorte}</strong>.`;
+    setSafeHTML(document.getElementById('b10-revistas-desc'), `Revistas publicadas en diferentes formatos y periodicidad durante el ejercicio <strong>${anioCorte}</strong>.`);
 
     // =========================================================================
     // DETONADOR DE ANIMACIONES
@@ -1755,15 +1919,15 @@ fetchSheetData('11_Infraestructura').then(data => {
     if (textosInterfase['INTRODUCCIÓN']) {
         let introH = textosInterfase['INTRODUCCIÓN'].h;
         let introI = textosInterfase['INTRODUCCIÓN'].i ? textosInterfase['INTRODUCCIÓN'].i : '';
-        document.getElementById('b11-lead').innerHTML = `${introH} <strong>${totalMetros.toLocaleString('es-MX')} metros cuadrados</strong> ${introI}`;
+        setSafeHTML(document.getElementById('b11-lead'), `${introH} <strong>${totalMetros.toLocaleString('es-MX')} metros cuadrados</strong> ${introI}`);
     }
     
     if (textosInterfase['FECHA DE CORTE']) document.getElementById('b11-date').innerText = `Corte al ${textosInterfase['FECHA DE CORTE'].h.toLowerCase()}`;
     
     if (textosInterfase['LINK SUPERIOR']) {
         const linkSup = document.getElementById('b11-link-sup');
-        linkSup.innerHTML = `${textosInterfase['LINK SUPERIOR'].h} &#8599;`;
-        linkSup.href = textosInterfase['LINK SUPERIOR'].i;
+        setSafeHTML(linkSup, `${textosInterfase['LINK SUPERIOR'].h} &#8599;`);
+        linkSup.href = safeUrl(textosInterfase['LINK SUPERIOR'].i);
     }
 
     // =========================================================================
@@ -1844,17 +2008,17 @@ fetchSheetData('12_Directorio').then(data => {
     // 1. Textos Generales (si existen en el Sheets, si no, respeta el HTML)
     if (textosInterfase['PRIMERA LÍNEA']) document.getElementById('b12-tag-text').innerText = textosInterfase['PRIMERA LÍNEA'].h;
     if (textosInterfase['LÍNEA PRINCIPAL']) document.getElementById('b12-title').innerText = textosInterfase['LÍNEA PRINCIPAL'].h;
-    if (textosInterfase['INTRODUCCIÓN']) document.getElementById('b12-lead').innerHTML = textosInterfase['INTRODUCCIÓN'].h;
+    if (textosInterfase['INTRODUCCIÓN']) setSafeHTML(document.getElementById('b12-lead'), textosInterfase['INTRODUCCIÓN'].h);
 
     // 2. Inyección de las listas armadas
-    if (document.getElementById('b12-list-bibliotecas')) document.getElementById('b12-list-bibliotecas').innerHTML = listasHTML.bibliotecas;
-    if (document.getElementById('b12-list-auditorios')) document.getElementById('b12-list-auditorios').innerHTML = listasHTML.auditorios;
-    if (document.getElementById('b12-list-deportivos')) document.getElementById('b12-list-deportivos').innerHTML = listasHTML.deportivos;
-    if (document.getElementById('b12-list-esparcimiento')) document.getElementById('b12-list-esparcimiento').innerHTML = listasHTML.esparcimiento;
-    if (document.getElementById('b12-list-culturales')) document.getElementById('b12-list-culturales').innerHTML = listasHTML.culturales;
-    if (document.getElementById('b12-list-talleres')) document.getElementById('b12-list-talleres').innerHTML = listasHTML.talleres;
-    if (document.getElementById('b12-list-laboratorios')) document.getElementById('b12-list-laboratorios').innerHTML = listasHTML.laboratorios;
-    if (document.getElementById('b12-list-otros')) document.getElementById('b12-list-otros').innerHTML = listasHTML.otros;
+    if (document.getElementById('b12-list-bibliotecas')) setSafeHTML(document.getElementById('b12-list-bibliotecas'), listasHTML.bibliotecas);
+    if (document.getElementById('b12-list-auditorios')) setSafeHTML(document.getElementById('b12-list-auditorios'), listasHTML.auditorios);
+    if (document.getElementById('b12-list-deportivos')) setSafeHTML(document.getElementById('b12-list-deportivos'), listasHTML.deportivos);
+    if (document.getElementById('b12-list-esparcimiento')) setSafeHTML(document.getElementById('b12-list-esparcimiento'), listasHTML.esparcimiento);
+    if (document.getElementById('b12-list-culturales')) setSafeHTML(document.getElementById('b12-list-culturales'), listasHTML.culturales);
+    if (document.getElementById('b12-list-talleres')) setSafeHTML(document.getElementById('b12-list-talleres'), listasHTML.talleres);
+    if (document.getElementById('b12-list-laboratorios')) setSafeHTML(document.getElementById('b12-list-laboratorios'), listasHTML.laboratorios);
+    if (document.getElementById('b12-list-otros')) setSafeHTML(document.getElementById('b12-list-otros'), listasHTML.otros);
 
     })
     .catch(error => {
@@ -1911,8 +2075,8 @@ fetchSheetData('13_Personal_Administrativo').then(data => {
     if (textosInterfase['FECHA DE CORTE']) document.getElementById('b13-date').innerText = `Corte al ${textosInterfase['FECHA DE CORTE'].h.toLowerCase()}`;
     if (textosInterfase['LINK SUPERIOR']) {
         const linkSup = document.getElementById('b13-link-sup');
-        linkSup.innerHTML = `${textosInterfase['LINK SUPERIOR'].h} &#8599;`;
-        linkSup.href = textosInterfase['LINK SUPERIOR'].i;
+        setSafeHTML(linkSup, `${textosInterfase['LINK SUPERIOR'].h} &#8599;`);
+        linkSup.href = safeUrl(textosInterfase['LINK SUPERIOR'].i);
     }
 
     // 2. Tarjeta 1: Total
@@ -1922,8 +2086,8 @@ fetchSheetData('13_Personal_Administrativo').then(data => {
     const pctMujeres = granTotal > 0 ? ((totalMujeres / granTotal) * 100).toFixed(1) : 0;
     const pctHombres = granTotal > 0 ? ((totalHombres / granTotal) * 100).toFixed(1) : 0;
     
-    document.getElementById('b13-total-mujeres-txt').innerHTML = `<strong>${totalMujeres.toLocaleString('es-MX')}</strong> Mujeres (${pctMujeres}%)`;
-    document.getElementById('b13-total-hombres-txt').innerHTML = `<strong>${totalHombres.toLocaleString('es-MX')}</strong> Hombres (${pctHombres}%)`;
+    setSafeHTML(document.getElementById('b13-total-mujeres-txt'), `<strong>${totalMujeres.toLocaleString('es-MX')}</strong> Mujeres (${pctMujeres}%)`);
+    setSafeHTML(document.getElementById('b13-total-hombres-txt'), `<strong>${totalHombres.toLocaleString('es-MX')}</strong> Hombres (${pctHombres}%)`);
     document.getElementById('b13-total-plantilla').setAttribute('data-target', granTotal);
 
     // 3. Tarjeta 2: Sindicalizados
@@ -2045,8 +2209,8 @@ fetchSheetData('14_Reportes').then(data => {
         document.getElementById('b14-c1-desc').innerText = reportes[0].desc;
         
         const link1 = document.getElementById('b14-c1-link');
-        link1.innerHTML = `${reportes[0].btn} &#8599;`;
-        link1.href = reportes[0].url;
+        setSafeHTML(link1, `${reportes[0].btn} &#8599;`);
+        link1.href = safeUrl(reportes[0].url);
     }
 
     // 3. Inyectar Datos Tarjeta 2
@@ -2057,8 +2221,8 @@ fetchSheetData('14_Reportes').then(data => {
         document.getElementById('b14-c2-desc').innerText = reportes[1].desc;
         
         const link2 = document.getElementById('b14-c2-link');
-        link2.innerHTML = `${reportes[1].btn} &#8599;`;
-        link2.href = reportes[1].url;
+        setSafeHTML(link2, `${reportes[1].btn} &#8599;`);
+        link2.href = safeUrl(reportes[1].url);
     }
 
     })
@@ -2118,11 +2282,11 @@ fetchSheetData('15_Otros').then(data => {
     // 2. Historias Narrativas 
     const movNac = datos['NACIONAL'] || '0';
     const movInt = datos['INTERNACIONAL'] || '0';
-    document.getElementById('b15-mov-desc').innerHTML = `La proyección global de nuestra comunidad estudiantil se fortalece a través de los programas de intercambio. Actualmente contamos con una participación de <strong style="color: var(--uaa-navy); font-size: 30px;">${movNac}</strong> estudiantes en movilidad académica a nivel nacional y <strong style="color: var(--uaa-navy); font-size: 30px;">${movInt}</strong> estudiantes a nivel internacional.`;
+    setSafeHTML(document.getElementById('b15-mov-desc'), `La proyección global de nuestra comunidad estudiantil se fortalece a través de los programas de intercambio. Actualmente contamos con una participación de <strong style="color: var(--uaa-navy); font-size: 30px;">${movNac}</strong> estudiantes en movilidad académica a nivel nacional y <strong style="color: var(--uaa-navy); font-size: 30px;">${movInt}</strong> estudiantes a nivel internacional.`);
 
     const incTot = datos['TOTAL PROYECTOS'] || '0';
     const incStart = datos['STARTUPS'] || '0';
-    document.getElementById('b15-inc-desc').innerHTML = `Fomentamos el emprendimiento universitario impulsando iniciativas innovadoras. Nuestra incubadora respalda activamente <strong style="color: var(--uaa-navy); font-size: 30px;">${incTot}</strong> proyectos de negocios, de los cuales <strong style="color: var(--uaa-gold-vibrant); font-size: 30px;">${incStart}</strong> han logrado consolidarse exitosamente como <em>startups</em> en el mercado actual.`;
+    setSafeHTML(document.getElementById('b15-inc-desc'), `Fomentamos el emprendimiento universitario impulsando iniciativas innovadoras. Nuestra incubadora respalda activamente <strong style="color: var(--uaa-navy); font-size: 30px;">${incTot}</strong> proyectos de negocios, de los cuales <strong style="color: var(--uaa-gold-vibrant); font-size: 30px;">${incStart}</strong> han logrado consolidarse exitosamente como <em>startups</em> en el mercado actual.`);
 
     // 3. Párrafos de la Feria Ambiental
     const pFeria = `Durante ${datos['FECHA'] || ''} se llevó a cabo la ${datos['EDICION'] || ''} ${datos['NOMBRE'] || ''}, ${datos['CUERPO'] || ''}`;
@@ -2138,25 +2302,40 @@ fetchSheetData('15_Otros').then(data => {
     // 4. Inyección de Tarjetas con las Imágenes PNG
     let htmlDesglose = '';
     desgloseFeria.forEach(item => {
-        const imgTag = item.img ? `<img src="${item.img}" alt="${item.material}" style="width: 100%; height: 100%; object-fit: contain; opacity: 0.85;">` : '';
+        const imgTag = item.img ? `<img src="${escapeHTML(item.img)}" alt="${escapeHTML(item.material)}" style="width: 100%; height: 100%; object-fit: contain; opacity: 0.85;">` : '';
 
         htmlDesglose += `
-        <div style="background: #FFFFFF; border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 12px rgba(22, 48, 114, 0.05); transition: transform 0.2s, box-shadow 0.2s; cursor: default;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(22, 48, 114, 0.12)'" onmouseout="this.style.transform='none'; this.style.boxShadow='0 4px 12px rgba(22, 48, 114, 0.05)'">
+        <div class="b15-feria-card" style="background: #FFFFFF; border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 12px rgba(22, 48, 114, 0.05); transition: transform 0.2s, box-shadow 0.2s; cursor: default;">
             <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(21, 96, 130, 0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 10px;">
             <div style="width: 100%; height: 100%;">
                 ${imgTag}
             </div>
             </div>
             <div>
-            <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">${item.material}</div>
+            <div style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;">${escapeHTML(item.material)}</div>
             <div style="font-size: 24px; font-weight: 800; color: var(--uaa-navy); line-height: 1;">
-                <span class="counter-dec" data-target="${item.kilos}">0</span><span style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-left: 6px;">kg</span>
+                <span class="counter-dec" data-target="${escapeHTML(item.kilos)}">0</span><span style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-left: 6px;">kg</span>
             </div>
             </div>
         </div>
         `;
     });
-    document.getElementById('b15-feria-desglose').innerHTML = htmlDesglose;
+    const feriaDesglose = document.getElementById('b15-feria-desglose');
+    setSafeHTML(feriaDesglose, htmlDesglose);
+
+    // Efecto hover (antes con onmouseover/onmouseout en línea, que el saneador elimina)
+    if (feriaDesglose) {
+        feriaDesglose.querySelectorAll('.b15-feria-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-3px)';
+                card.style.boxShadow = '0 12px 24px rgba(22, 48, 114, 0.12)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'none';
+                card.style.boxShadow = '0 4px 12px rgba(22, 48, 114, 0.05)';
+            });
+        });
+    }
 
     const animarDatoDecimal = (elemento, objetivo) => {
         const duration = 1400;
@@ -2224,7 +2403,10 @@ fetchSheetData('Dudas').then(data => {
         const linkCorreo = document.getElementById('contacto-correo-link');
         if (linkCorreo) {
         linkCorreo.innerText = infoContacto.correo;
-        linkCorreo.href = `mailto:${infoContacto.correo}`; 
+        // Solo se genera el mailto si es una dirección simple (evita inyectar ?bcc=, &body=, etc.)
+        if (/^[^\s@<>()"',;:?&=\\]+@[^\s@<>()"',;:?&=\\]+\.[^\s@<>()"',;:?&=\\]+$/.test(infoContacto.correo)) {
+            linkCorreo.href = `mailto:${infoContacto.correo}`;
+        }
         }
     }
 
@@ -2304,25 +2486,52 @@ const chatbotInput = document.getElementById('chatbot-input');
 const chatbotSend = document.getElementById('chatbot-send');
 const chatbotMessages = document.getElementById('chatbot-messages');
 
+// Límites del lado del cliente (el servidor también debe validarlos)
+const CHATBOT_MAX_LENGTH = 500;       // caracteres máximos por pregunta
+const CHATBOT_MIN_INTERVAL_MS = 1500; // tiempo mínimo entre envíos
+const CHATBOT_TIMEOUT_MS = 60000;     // tiempo máximo de espera de la respuesta
+let chatbotEnviando = false;
+let chatbotUltimoEnvio = 0;
+
+if (chatbotInput) {
+    chatbotInput.setAttribute('maxlength', String(CHATBOT_MAX_LENGTH));
+}
+
+/** Crea una burbuja de mensaje. Si `esHTML` es true el contenido se sanea; si no, se inserta como texto. */
+function crearMensajeChatbot(clase, contenido, esHTML = false) {
+    const mensaje = document.createElement('div');
+    mensaje.className = `chatbot-message ${clase}`;
+    const burbuja = document.createElement('div');
+    burbuja.className = 'message-bubble';
+    if (esHTML) setSafeHTML(burbuja, contenido);
+    else burbuja.textContent = contenido;
+    mensaje.appendChild(burbuja);
+    return mensaje;
+}
+
 async function enviarMensajeChatbot() {
 
-    const pregunta = chatbotInput.value.trim();
+    if (!chatbotInput || !chatbotMessages) return;
+
+    // Evitar envíos simultáneos o demasiado seguidos
+    const ahora = Date.now();
+    if (chatbotEnviando || ahora - chatbotUltimoEnvio < CHATBOT_MIN_INTERVAL_MS) {
+        return;
+    }
+
+    const pregunta = chatbotInput.value.trim().slice(0, CHATBOT_MAX_LENGTH);
 
     // No enviar mensajes vacíos
     if (!pregunta) {
         return;
     }
 
-    // Mostrar pregunta del usuario
-    const mensajeUsuario = document.createElement('div');
+    chatbotEnviando = true;
+    chatbotUltimoEnvio = ahora;
+    if (chatbotSend) chatbotSend.disabled = true;
 
-    mensajeUsuario.className = 'chatbot-message user-message';
-
-    mensajeUsuario.innerHTML = `
-        <div class="message-bubble">
-            ${pregunta}
-        </div>
-    `;
+    // Mostrar pregunta del usuario (como texto plano, nunca como HTML)
+    const mensajeUsuario = crearMensajeChatbot('user-message', pregunta);
 
     chatbotMessages.appendChild(mensajeUsuario);
 
@@ -2339,9 +2548,10 @@ async function enviarMensajeChatbot() {
     // Desplazar conversación hacia abajo
     chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 
-    try {
+    const controlador = new AbortController();
+    const temporizador = setTimeout(() => controlador.abort(), CHATBOT_TIMEOUT_MS);
 
-        console.log('📩 Enviando pregunta a Render:', pregunta);
+    try {
 
         const response = await fetch(
             'https://chatbot-uaa-en-numeros.onrender.com/api/chat',
@@ -2354,51 +2564,52 @@ async function enviarMensajeChatbot() {
 
                 body: JSON.stringify({
                     pregunta: pregunta
-                })
+                }),
+
+                signal: controlador.signal,
+                credentials: 'omit'
             }
         );
 
-        const resultado = await response.json();
-
-        console.log('📥 Respuesta de Render:', resultado);
+        // Si el servidor no devuelve JSON válido, se trata como error
+        let resultado = {};
+        try {
+            resultado = await response.json();
+        } catch (_) {
+            throw new Error('Respuesta no válida del servidor.');
+        }
 
         if (!response.ok) {
             throw new Error(
-                resultado.error || 'Error al comunicarse con el servidor.'
+                (resultado && resultado.error) || 'Error al comunicarse con el servidor.'
             );
         }
 
-        // Crear mensaje del bot
-        const mensajeBot = document.createElement('div');
+        // Crear mensaje del bot (la respuesta se sanea: se conserva el formato pero se elimina cualquier script)
+        const respuesta = (resultado && typeof resultado.respuesta === 'string' && resultado.respuesta.trim())
+            ? resultado.respuesta
+            : 'No se recibió una respuesta.';
 
-        mensajeBot.className = 'chatbot-message bot-message';
-
-        mensajeBot.innerHTML = `
-            <div class="message-bubble">
-                ${resultado.respuesta || 'No se recibió una respuesta.'}
-            </div>
-        `;
+        const mensajeBot = crearMensajeChatbot('bot-message', respuesta, true);
 
         chatbotMessages.appendChild(mensajeBot);
 
     } catch (error) {
 
-        console.error('❌ Error del chatbot:', error);
+        console.error('❌ Error del chatbot:', error && error.message ? error.message : error);
 
-        const mensajeError = document.createElement('div');
-
-        mensajeError.className = 'chatbot-message bot-message';
-
-        mensajeError.innerHTML = `
-            <div class="message-bubble">
-                Lo siento, ocurrió un problema al consultar la información. 
-                Por favor, intenta nuevamente.
-            </div>
-        `;
+        const mensajeError = crearMensajeChatbot(
+            'bot-message',
+            'Lo siento, ocurrió un problema al consultar la información. Por favor, intenta nuevamente.'
+        );
 
         chatbotMessages.appendChild(mensajeError);
 
     } finally {
+
+        clearTimeout(temporizador);
+        chatbotEnviando = false;
+        if (chatbotSend) chatbotSend.disabled = false;
 
         // Ocultar indicador de carga
         if (chatbotLoading) {

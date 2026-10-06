@@ -4,6 +4,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- CSP: limita scripts y conexiones a los servicios utilizados por el sitio. -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    base-uri 'self';
+    object-src 'none';
+    form-action 'self';
+    script-src 'self' https://cdn.sheetjs.com https://www.googletagmanager.com https://www.clarity.ms https://scripts.clarity.ms;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https:;
+    connect-src 'self' https://docs.google.com https://*.googleusercontent.com https://chatbot-uaa-en-numeros.onrender.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.clarity.ms https://*.clarity.ms;
+    worker-src 'self' blob:;
+    upgrade-insecure-requests">
   <title>UAA en Números — Estadística Institucional</title>
 
   <!-- Fuentes tipográficas -->
@@ -13,34 +26,14 @@
     href="https://fonts.googleapis.com/css2?family=Georama:wght@400;500;600;700&family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="assets/css/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- SheetJS 0.20.3 (corrige CVE-2023-30533 y CVE-2024-22363). Integridad verificada con SRI. -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"
+    integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT"
+    crossorigin="anonymous"></script>
 
-  <!-- Clarity Microsoft -->
-  <script type="text/javascript">
-    (function (c, l, a, r, i, t, y) {
-      c[a] = c[a] || function () {
-        (c[a].q = c[a].q || []).push(arguments)
-      };
-      t = l.createElement(r);
-      t.async = 1;
-      t.src = "https://www.clarity.ms/tag/" + i;
-      y = l.getElementsByTagName(r)[0];
-      y.parentNode.insertBefore(t, y);
-    })(window, document, "clarity", "script", "ymh5008s4u");
-  </script>
-
-  <!-- Google tag (gtag.js) -->
+  <!-- Inicialización externa para evitar scripts inline; se conserva la analítica. -->
+  <script src="assets/js/analytics.js"></script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-RJ18T6PHS7"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-
-    function gtag() {
-      dataLayer.push(arguments);
-    }
-    gtag('js', new Date());
-
-    gtag('config', 'G-RJ18T6PHS7');
-  </script>
 
 </head>
 
@@ -244,8 +237,7 @@
       </article>
 
       <div class="matricula-action-wrapper reveal">
-        <button class="block-action-link" style="background:none; border-top:none; border-left:none; border-right:none;"
-          onclick="document.getElementById('modalCentros').classList.add('open')">
+        <button id="open-modal-centros" class="block-action-link" style="background:none; border-top:none; border-left:none; border-right:none;">
           Consultar Tabla de Matrícula Estudiantil por Centro Académico &#8599;
         </button>
       </div>
@@ -260,8 +252,8 @@
       <div class="block-lead-wrap">
         <p class="block-lead">...</p>
         <div class="block-links-group">
-          <a href="#" target="_blank" class="block-action-link">... &#8599;</a>
-          <a href="#" target="_blank" class="block-action-link">... &#8599;</a>
+          <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link">... &#8599;</a>
+          <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link">... &#8599;</a>
         </div>
       </div>
     </header>
@@ -574,7 +566,7 @@
         <p class="block-lead" id="b4-lead">...</p>
         <div class="block-links-group">
           <div class="block-date" id="b4-date">...</div>
-          <a href="#" target="_blank" class="block-action-link" id="b4-link">... &#8599;</a>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link" id="b4-link">... &#8599;</a>
         </div>
       </div>
     </header>
@@ -943,7 +935,7 @@
         <p class="block-lead" id="b9-lead">...</p>
         <div class="block-links-group">
           <div class="block-date" id="b9-date">...</div>
-          <a href="#" target="_blank" class="block-action-link" id="b9-link-sup">... &#8599;</a>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link" id="b9-link-sup">... &#8599;</a>
         </div>
       </div>
     </header>
@@ -979,7 +971,7 @@
                 style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px;">Total de
                 Patentes Institucionales</div>
               <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-top: 8px; margin-bottom: 12px;"></div>
-              <a href="#" target="_blank" class="block-action-link" id="b9-t1-link"
+        <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link" id="b9-t1-link"
                 style="font-size: 13px; font-weight: 600;">... &#8599;</a>
             </div>
           </div>
@@ -1083,7 +1075,7 @@
         <p class="block-lead" id="b11-lead">...</p>
         <div class="block-links-group">
           <div class="block-date" id="b11-date">...</div>
-          <a href="#" target="_blank" class="block-action-link" id="b11-link-sup">... &#8599;</a>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link" id="b11-link-sup">... &#8599;</a>
         </div>
       </div>
     </header>
@@ -1370,7 +1362,7 @@
         <p class="block-lead" id="b13-lead">...</p>
         <div class="block-links-group">
           <div class="block-date" id="b13-date">...</div>
-          <a href="#" target="_blank" class="block-action-link" id="b13-link-sup">... &#8599;</a>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link" id="b13-link-sup">... &#8599;</a>
         </div>
       </div>
     </header>
@@ -1610,7 +1602,7 @@
         </div>
         <div>
           <div class="hero-metric-bar-yellow" style="max-width: 120px; margin-bottom: 16px;"></div>
-          <a href="#" target="_blank" class="block-action-link" id="b14-c1-link"
+        <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link" id="b14-c1-link"
             style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; text-decoration: none;">...
             &#8599;</a>
         </div>
@@ -1639,7 +1631,7 @@
         </div>
         <div>
           <div class="hero-metric-bar-yellow" style="max-width: 120px; margin-bottom: 16px;"></div>
-          <a href="#" target="_blank" class="block-action-link" id="b14-c2-link"
+        <a href="#" target="_blank" rel="noopener noreferrer" class="block-action-link" id="b14-c2-link"
             style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; text-decoration: none;">...
             &#8599;</a>
         </div>
@@ -1812,8 +1804,7 @@
     <div class="glass-modal">
       <div class="modal-header">
         <h2 class="modal-title">Población por Centro Académico</h2>
-        <button class="close-btn"
-          onclick="document.getElementById('modalCentros').classList.remove('open')">&times;</button>
+        <button id="close-modal-centros" class="close-btn" type="button" aria-label="Cerrar">&times;</button>
       </div>
       <div class="modal-body">
         <table class="glass-table">

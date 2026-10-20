@@ -2497,14 +2497,116 @@ if (chatbotInput) {
     chatbotInput.setAttribute('maxlength', String(CHATBOT_MAX_LENGTH));
 }
 
+/**
+ * Detecta URLs (http/https, www.) y correos en texto plano.
+ * La alternativa de URL va primero para que un "@" dentro de una URL no se tome como correo.
+ */
+const CHATBOT_LINK_REGEX = /\b(?:https?:\/\/|www\.)[^\s<>"']+|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+
+/** Quita la puntuación final que no forma parte del enlace (p. ej. "https://uaa.mx." o "(https://uaa.mx)"). */
+function recortarPuntuacionFinal(texto) {
+    const pares = { ')': '(', ']': '[', '}': '{' };
+    let resultado = texto;
+    while (resultado.length) {
+        const ultimo = resultado.slice(-1);
+        if (/[.,;:!?¡¿'"»”’…]/.test(ultimo)) {
+            resultado = resultado.slice(0, -1);
+            continue;
+        }
+        if (pares[ultimo]) {
+            // Solo se quita el cierre si no tiene su apertura dentro de la URL (p. ej. enlaces de Wikipedia)
+            const aperturas = resultado.split(pares[ultimo]).length - 1;
+            const cierres = resultado.split(ultimo).length - 1;
+            if (cierres > aperturas) {
+                resultado = resultado.slice(0, -1);
+                continue;
+            }
+        }
+        break;
+    }
+    return resultado;
+}
+
+/**
+ * Convierte en enlaces clicables las URLs y correos escritos como texto plano.
+ * Trabaja sobre nodos de texto del DOM YA SANEADO (nunca sobre la cadena HTML),
+ * por lo que no puede introducir etiquetas ni atributos nuevos. Se omite el texto
+ * que ya está dentro de <a>, <code> o <pre>.
+ */
+function linkificarTexto(raiz) {
+    if (!raiz) return;
+    const walker = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, {
+        acceptNode(nodo) {
+            return nodo.parentElement && nodo.parentElement.closest('a, code, pre')
+                ? NodeFilter.FILTER_REJECT
+                : NodeFilter.FILTER_ACCEPT;
+        }
+    });
+
+    const nodos = [];
+    while (walker.nextNode()) nodos.push(walker.currentNode);
+
+    for (const nodo of nodos) {
+        const texto = nodo.nodeValue;
+        const coincidencias = Array.from(texto.matchAll(CHATBOT_LINK_REGEX));
+        if (!coincidencias.length) continue;
+
+        const fragmento = document.createDocumentFragment();
+        let cursor = 0;
+
+        for (const coincidencia of coincidencias) {
+            const inicio = coincidencia.index;
+            const enlaceTexto = recortarPuntuacionFinal(coincidencia[0]);
+            if (!enlaceTexto) continue;
+
+            const esCorreo = !/^(?:https?:\/\/|www\.)/i.test(enlaceTexto);
+            const destino = esCorreo
+                ? `mailto:${enlaceTexto}`
+                : (/^www\./i.test(enlaceTexto) ? `https://${enlaceTexto}` : enlaceTexto);
+            const href = safeUrl(destino);
+            if (!href || href === '#') continue;
+
+            if (inicio > cursor) {
+                fragmento.appendChild(document.createTextNode(texto.slice(cursor, inicio)));
+            }
+
+            const enlace = document.createElement('a');
+            enlace.href = href;
+            // Las URLs se muestran como "LINK" para no saturar la conversación; la dirección
+            // completa queda visible al pasar el cursor (title) y para lectores de pantalla.
+            // Los correos se muestran completos.
+            enlace.textContent = esCorreo ? enlaceTexto : 'LINK';
+            if (!esCorreo) {
+                enlace.title = enlaceTexto;
+                enlace.setAttribute('aria-label', `Abrir enlace: ${enlaceTexto}`);
+                enlace.target = '_blank';
+                enlace.rel = 'noopener noreferrer';
+            }
+            fragmento.appendChild(enlace);
+
+            cursor = inicio + enlaceTexto.length;
+        }
+
+        if (cursor === 0) continue; // ninguna coincidencia válida
+        if (cursor < texto.length) {
+            fragmento.appendChild(document.createTextNode(texto.slice(cursor)));
+        }
+        nodo.replaceWith(fragmento);
+    }
+}
+
 /** Crea una burbuja de mensaje. Si `esHTML` es true el contenido se sanea; si no, se inserta como texto. */
 function crearMensajeChatbot(clase, contenido, esHTML = false) {
     const mensaje = document.createElement('div');
     mensaje.className = `chatbot-message ${clase}`;
     const burbuja = document.createElement('div');
     burbuja.className = 'message-bubble';
-    if (esHTML) setSafeHTML(burbuja, contenido);
-    else burbuja.textContent = contenido;
+    if (esHTML) {
+        setSafeHTML(burbuja, contenido);
+        linkificarTexto(burbuja); // después de sanear: solo se crean <a> con URLs validadas por safeUrl()
+    } else {
+        burbuja.textContent = contenido;
+    }
     mensaje.appendChild(burbuja);
     return mensaje;
 }
@@ -2537,6 +2639,10 @@ async function enviarMensajeChatbot() {
 
     // Limpiar caja de texto
     chatbotInput.value = '';
+
+    // Bloquear el campo de texto mientras se espera la respuesta (se recuerda si tenía el foco)
+    const inputTeniaFoco = document.activeElement === chatbotInput;
+    chatbotInput.disabled = true;
 
     // Mostrar indicador de carga
     const chatbotLoading = document.getElementById('chatbot-loading');
@@ -2610,6 +2716,8 @@ async function enviarMensajeChatbot() {
         clearTimeout(temporizador);
         chatbotEnviando = false;
         if (chatbotSend) chatbotSend.disabled = false;
+        chatbotInput.disabled = false;
+        if (inputTeniaFoco) chatbotInput.focus();
 
         // Ocultar indicador de carga
         if (chatbotLoading) {

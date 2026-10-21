@@ -2487,7 +2487,7 @@ const chatbotSend = document.getElementById('chatbot-send');
 const chatbotMessages = document.getElementById('chatbot-messages');
 
 // Límites del lado del cliente (el servidor también debe validarlos)
-const CHATBOT_MAX_LENGTH = 500;       // caracteres máximos por pregunta
+const CHATBOT_MAX_LENGTH = 150;       // caracteres máximos por pregunta
 const CHATBOT_MIN_INTERVAL_MS = 1500; // tiempo mínimo entre envíos
 const CHATBOT_TIMEOUT_MS = 60000;     // tiempo máximo de espera de la respuesta
 let chatbotEnviando = false;
@@ -2498,10 +2498,57 @@ if (chatbotInput) {
 }
 
 /**
- * Detecta URLs (http/https, www.) y correos en texto plano.
- * La alternativa de URL va primero para que un "@" dentro de una URL no se tome como correo.
+ * Detecta enlaces en texto plano, en este orden de prioridad:
+ *   1. Enlaces en formato Markdown: [texto](https://...)
+ *   2. URLs entre corchetes:        [https://...]
+ *   3. URLs sueltas (http/https, www.)
+ *   4. Correos electrónicos
+ * La alternativa de URL va antes que la de correo para que un "@" dentro de una URL no se tome como correo.
  */
-const CHATBOT_LINK_REGEX = /\b(?:https?:\/\/|www\.)[^\s<>"']+|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+const CHATBOT_LINK_REGEX = /\[([^\]\n]{0,200})\]\(\s*((?:https?:\/\/|www\.)[^\s<>"']+?)\s*\)|\[\s*((?:https?:\/\/|www\.)[^\s<>"'\[\]]+)\s*\]|\b(?:https?:\/\/|www\.)[^\s<>"'\[\]]+|\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
+
+const CHATBOT_URL_INICIO_REGEX = /^(?:https?:\/\/|www\.)/i;
+
+/** Indica si una URL apunta a Google Maps (ubicaciones). */
+function esEnlaceDeMapa(url) {
+    try {
+        const u = new URL(url);
+        const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+        return host === 'maps.app.goo.gl'
+            || host.startsWith('maps.google.')
+            || (host === 'goo.gl' && u.pathname.startsWith('/maps'))
+            || (/^google\.[a-z.]+$/.test(host) && u.pathname.startsWith('/maps'));
+    } catch (_) {
+        return false;
+    }
+}
+
+/**
+ * Texto amigable para un enlace: se usa el texto del Markdown si es descriptivo;
+ * si no (o si el texto es la propia URL), se genera una etiqueta según el destino.
+ */
+function etiquetaEnlaceChatbot(url, textoOriginal) {
+    const texto = (textoOriginal || '').trim();
+    if (texto && !CHATBOT_URL_INICIO_REGEX.test(texto)) return texto;
+    if (esEnlaceDeMapa(url)) return 'Ver ubicación en el mapa';
+    try {
+        return `Abrir en ${new URL(url).hostname.replace(/^www\./i, '')}`;
+    } catch (_) {
+        return 'Abrir enlace';
+    }
+}
+
+/** Aplica texto, clases y atributos homogéneos a un enlace web del chatbot. */
+function decorarEnlaceChatbot(enlace, url, textoOriginal) {
+    enlace.textContent = etiquetaEnlaceChatbot(url, textoOriginal);
+    enlace.classList.add('chatbot-link');
+    if (esEnlaceDeMapa(url)) enlace.classList.add('chatbot-link--map');
+    // La dirección completa queda visible al pasar el cursor y para lectores de pantalla
+    enlace.title = url;
+    enlace.setAttribute('aria-label', `${enlace.textContent} (se abre en una pestaña nueva)`);
+    enlace.target = '_blank';
+    enlace.rel = 'noopener noreferrer';
+}
 
 /** Quita la puntuación final que no forma parte del enlace (p. ej. "https://uaa.mx." o "(https://uaa.mx)"). */
 function recortarPuntuacionFinal(texto) {
@@ -2528,13 +2575,23 @@ function recortarPuntuacionFinal(texto) {
 }
 
 /**
- * Convierte en enlaces clicables las URLs y correos escritos como texto plano.
+ * Convierte en enlaces clicables las URLs y correos escritos como texto plano
+ * (incluidos los enlaces en formato Markdown).
  * Trabaja sobre nodos de texto del DOM YA SANEADO (nunca sobre la cadena HTML),
  * por lo que no puede introducir etiquetas ni atributos nuevos. Se omite el texto
  * que ya está dentro de <a>, <code> o <pre>.
  */
 function linkificarTexto(raiz) {
     if (!raiz) return;
+
+    // Enlaces <a> que ya venían en la respuesta: si muestran la URL cruda, se les da una etiqueta amigable
+    raiz.querySelectorAll('a[href^="http"]').forEach(a => {
+        const visible = a.textContent.trim();
+        if (!visible || CHATBOT_URL_INICIO_REGEX.test(visible)) {
+            decorarEnlaceChatbot(a, a.getAttribute('href'), '');
+        }
+    });
+
     const walker = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, {
         acceptNode(nodo) {
             return nodo.parentElement && nodo.parentElement.closest('a, code, pre')
@@ -2556,10 +2613,28 @@ function linkificarTexto(raiz) {
 
         for (const coincidencia of coincidencias) {
             const inicio = coincidencia.index;
-            const enlaceTexto = recortarPuntuacionFinal(coincidencia[0]);
+            if (inicio < cursor) continue;
+
+            // [texto](url) y [url] consumen toda la coincidencia (corchetes y paréntesis incluidos)
+            const esMarkdown = coincidencia[2] !== undefined;
+            const esCorchetes = coincidencia[3] !== undefined;
+            let enlaceTexto;
+            let longitud;
+            let textoVisible = '';
+            if (esMarkdown) {
+                enlaceTexto = coincidencia[2];
+                textoVisible = coincidencia[1];
+                longitud = coincidencia[0].length;
+            } else if (esCorchetes) {
+                enlaceTexto = recortarPuntuacionFinal(coincidencia[3]);
+                longitud = coincidencia[0].length;
+            } else {
+                enlaceTexto = recortarPuntuacionFinal(coincidencia[0]);
+                longitud = enlaceTexto.length;
+            }
             if (!enlaceTexto) continue;
 
-            const esCorreo = !/^(?:https?:\/\/|www\.)/i.test(enlaceTexto);
+            const esCorreo = !CHATBOT_URL_INICIO_REGEX.test(enlaceTexto);
             const destino = esCorreo
                 ? `mailto:${enlaceTexto}`
                 : (/^www\./i.test(enlaceTexto) ? `https://${enlaceTexto}` : enlaceTexto);
@@ -2572,19 +2647,16 @@ function linkificarTexto(raiz) {
 
             const enlace = document.createElement('a');
             enlace.href = href;
-            // Las URLs se muestran como "LINK" para no saturar la conversación; la dirección
-            // completa queda visible al pasar el cursor (title) y para lectores de pantalla.
-            // Los correos se muestran completos.
-            enlace.textContent = esCorreo ? enlaceTexto : 'LINK';
-            if (!esCorreo) {
-                enlace.title = enlaceTexto;
-                enlace.setAttribute('aria-label', `Abrir enlace: ${enlaceTexto}`);
-                enlace.target = '_blank';
-                enlace.rel = 'noopener noreferrer';
+            if (esCorreo) {
+                // Los correos se muestran completos
+                enlace.textContent = enlaceTexto;
+            } else {
+                // Las URLs se muestran con una etiqueta descriptiva (p. ej. "Ver ubicación en el mapa")
+                decorarEnlaceChatbot(enlace, destino, textoVisible);
             }
             fragmento.appendChild(enlace);
 
-            cursor = inicio + enlaceTexto.length;
+            cursor = inicio + longitud;
         }
 
         if (cursor === 0) continue; // ninguna coincidencia válida

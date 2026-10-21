@@ -2323,6 +2323,47 @@ a.email-link:hover {
     color: var(--uaa-navy);
 }
 
+/* Enlaces web con etiqueta descriptiva (p. ej. "Ver ubicación en el mapa") */
+.bot-message .message-bubble a.chatbot-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 2px 0;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(22, 48, 114, 0.07);
+    border: 1px solid rgba(22, 48, 114, 0.15);
+    color: var(--uaa-navy);
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    overflow-wrap: normal;
+    vertical-align: baseline;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.bot-message .message-bubble a.chatbot-link::after {
+    content: "\2197"; /* flecha ↗ */
+    font-size: 11px;
+}
+
+.bot-message .message-bubble a.chatbot-link--map::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.bot-message .message-bubble a.chatbot-link:hover,
+.bot-message .message-bubble a.chatbot-link:focus-visible {
+    background: rgba(22, 48, 114, 0.14);
+    border-color: rgba(22, 48, 114, 0.3);
+    color: var(--uaa-navy);
+}
+
 .user-message .message-bubble {
     background: linear-gradient(135deg, var(--uaa-navy), #1e3f8a);
     color: white;

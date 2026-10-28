@@ -2232,7 +2232,161 @@ fetchSheetData('14_Reportes').then(data => {
 });
 
 // =========================================================================
-// AUTOMATIZACIÓN BLOQUE 15: OTROS DATOS (CORRECCIÓN ESTRICTA DE TÍTULOS)
+// AUTOMATIZACIÓN BLOQUE 15: ESCUELAS INCORPORADAS (pestaña 16_Incorporadas)
+// =========================================================================
+window.addEventListener('DOMContentLoaded', () => {
+fetchSheetData('16_Incorporadas').then(data => {
+
+    // Normaliza etiquetas: mayúsculas, sin acentos y con un solo espacio entre palabras
+    const normalizar = (txt) => String(txt || '')
+        .trim()
+        .toUpperCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ');
+
+    const ETIQUETAS_TEXTO = ['PRIMERA LINEA', 'LINEA PRINCIPAL', 'INTRODUCCION', 'FECHA DE CORTE'];
+
+    let textos = {};   // Textos naranjas: { b: Columna B, c: Columna C }
+    let total = 0, conPlan = 0, profesores = 0, egresados = 0, anioInicio = 0;
+
+    for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        if (!row || row.length === 0) continue;
+
+        const clave = normalizar(row[0]);
+        const valor = String(row[1] || '').trim();
+        if (!clave) continue;
+
+        // Mapeo Textos (Col A = etiqueta, Col B = texto, Col C = complemento)
+        if (clave.startsWith('TARJETA') || ETIQUETAS_TEXTO.includes(clave)) {
+            textos[clave] = { b: valor, c: String(row[2] || '').trim() };
+            continue;
+        }
+
+        // Mapeo Datos numéricos (Col A = indicador, Col B = valor)
+        if (clave.includes('TOTAL') && clave.includes('ESCUELAS')) total = cleanNum(valor);
+        else if (clave.includes('PLAN DE ESTUDIOS')) conPlan = cleanNum(valor);
+        else if (clave.includes('PROFESORES')) profesores = cleanNum(valor);
+        else if (clave.includes('EGRESADOS')) egresados = cleanNum(valor);
+        else if (clave.includes('INICIO')) anioInicio = cleanNum(valor);
+    }
+
+    const b15 = document.getElementById('bloque-15-cards');
+    if (!b15) return;
+
+    const txt = (clave) => (textos[clave] && textos[clave].b) || '';
+    const ponerTexto = (id, valor) => {
+        const el = document.getElementById(id);
+        if (el && valor) el.innerText = valor;
+    };
+
+    // 1. Textos Generales
+    ponerTexto('b15-tag-text', txt('PRIMERA LINEA'));
+    ponerTexto('b15-title', txt('LINEA PRINCIPAL'));
+    ponerTexto('b15-lead', txt('INTRODUCCION'));
+
+    const fecha = document.getElementById('b15-date');
+    if (txt('FECHA DE CORTE')) fecha.innerText = `Corte institucional ${txt('FECHA DE CORTE')}`;
+    else fecha.style.display = 'none';
+
+    // 2. Tarjeta 1: total de escuelas, año de inicio y años de trayectoria
+    ponerTexto('b15-t1-tag', txt('TARJETA 1 PRIMERA LINEA'));
+    ponerTexto('b15-t1-desc', txt('TARJETA 1 SECUNDARIA'));
+    document.getElementById('b15-total').setAttribute('data-target', total);
+
+    // Línea de tiempo: del año de inicio (primer bachillerato incorporado) al año de la fecha de corte
+    const timeline = document.getElementById('b15-timeline');
+    const anioCorteTxt = (txt('FECHA DE CORTE').match(/\b(?:19|20)\d{2}\b/) || [])[0];
+    const anioFinal = anioCorteTxt ? parseInt(anioCorteTxt, 10) : new Date().getFullYear();
+    if (anioInicio) {
+        document.getElementById('b15-anio').innerText = String(anioInicio);
+        document.getElementById('b15-anio-actual').innerText = String(anioFinal);
+        document.getElementById('b15-anios').innerText = Math.max(anioFinal - anioInicio, 0);
+        document.getElementById('b15-total-tl').innerText = total.toLocaleString('es-MX');
+    } else if (timeline) {
+        timeline.style.display = 'none';
+    }
+
+    // 3. Tarjeta 2: escuelas con plan de estudios ("X de Y" + una figura por escuela)
+    ponerTexto('b15-t2-tag', txt('TARJETA 2 PRIMERA LINEA'));
+    document.getElementById('b15-plan-num').setAttribute('data-target', conPlan);
+    document.getElementById('b15-plan-de').innerText = `${conPlan.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')}`;
+    const pctPlan = total > 0 ? Math.min((conPlan / total) * 100, 100) : 0;
+    const pctTexto = `${pctPlan.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+    document.getElementById('b15-plan-pct-txt').innerText = pctTexto;
+
+    const escuelas = document.getElementById('b15-schools');
+    if (escuelas && total > 0 && total <= 120) {
+        const icono = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3 2 8v2h20V8L12 3z"></path><path d="M4 11v7H3v3h18v-3h-1v-7h-3v7h-2v-7h-2v7h-2v-7H9v7H7v-7H4z"></path></svg>';
+        let html = '';
+        for (let i = 0; i < total; i++) {
+            const activa = i < conPlan ? ' b15-school--active' : '';
+            html += `<span class="b15-school${activa}" style="transition-delay: ${i * 30}ms;">${icono}</span>`;
+        }
+        setSafeHTML(escuelas, html);
+        escuelas.setAttribute('aria-label', `${conPlan} de ${total} escuelas incorporadas trabajan con plan de estudios`);
+    } else if (escuelas) {
+        escuelas.style.display = 'none';
+    }
+
+    // 4. Tarjeta 3: profesores (Col B + promedio calculado + Col C)
+    ponerTexto('b15-t3-tag', txt('TARJETA 3 PRIMERA LINEA'));
+    document.getElementById('b15-prof-num').setAttribute('data-target', profesores);
+    const t3 = textos['TARJETA 3 SECUNDARIA'];
+    if (t3 && t3.b) {
+        const promedio = total > 0 ? Math.round(profesores / total).toLocaleString('es-MX') : '';
+        const partes = promedio
+            ? [t3.b, `<strong>${promedio}</strong>`, escapeHTML(t3.c)]
+            : [t3.b.replace(/,?\s*con un promedio de\s*$/i, '')];
+        let html = escapeHTML(partes[0]);
+        if (partes.length > 1) html += ` ${partes[1]}${partes[2] ? ' ' + partes[2] : ''}`;
+        if (!/[.!?]$/.test(html)) html += '.';
+        setSafeHTML(document.getElementById('b15-t3-desc'), html);
+    }
+
+    // 5. Tarjeta 4: egresados
+    ponerTexto('b15-t4-tag', txt('TARJETA 4 PRIMERA LINEA'));
+    ponerTexto('b15-t4-desc', txt('TARJETA 4 SECUNDARIA'));
+    document.getElementById('b15-egr-num').setAttribute('data-target', egresados);
+
+    // 6. Enlace al directorio (TARJETA 1 LINK; se busca la URL en cualquier columna de la fila)
+    const filaLink = textos['TARJETA 1 LINK'];
+    const enlace = filaLink
+        ? [filaLink.b, filaLink.c].find(c => /^(?:https?:\/\/|www\.)/i.test(c)) || ''
+        : '';
+    const cta = document.getElementById('b15-cta');
+    const destino = /^www\./i.test(enlace) ? `https://${enlace}` : enlace;
+    const href = destino ? safeUrl(destino) : '';
+    if (href && href !== '#') {
+        document.getElementById('b15-link').href = href;
+    } else if (cta) {
+        cta.style.display = 'none';
+    }
+
+    // =========================================================================
+    // DETONADOR DE ANIMACIONES
+    // =========================================================================
+    setTimeout(() => {
+        const cardsContainer = document.getElementById('bloque-15-cards');
+        if (!cardsContainer) return;
+
+        cardsContainer.querySelectorAll('.counter').forEach(c => {
+            const target = parseFloat(c.getAttribute('data-target') || 0);
+            animarDato(c, target);
+        });
+
+        if (escuelas) escuelas.classList.add('is-visible');
+    }, 50);
+
+    })
+    .catch(error => {
+    console.error('Detalle del error en Bloque 15:', error);
+    });
+});
+
+// =========================================================================
+// AUTOMATIZACIÓN BLOQUE 16: OTROS DATOS (CORRECCIÓN ESTRICTA DE TÍTULOS)
 // =========================================================================
 window.addEventListener('DOMContentLoaded', () => {
 fetchSheetData('15_Otros').then(data => {
@@ -2272,28 +2426,28 @@ fetchSheetData('15_Otros').then(data => {
         }
     }
 
-    const b15 = document.getElementById('bloque-15-cards');
-    if (!b15) return;
+    const b16 = document.getElementById('bloque-16-cards');
+    if (!b16) return;
 
     // 1. Textos Generales 
-    document.getElementById('b15-tag-text').innerText = datos['TAG'] || 'OTROS DATOS';
-    document.getElementById('b15-title').innerText = datos['TITLE'] || 'Sobre nuestra Universidad';
+    document.getElementById('b16-tag-text').innerText = datos['TAG'] || 'OTROS DATOS';
+    document.getElementById('b16-title').innerText = datos['TITLE'] || 'Sobre nuestra Universidad';
 
     // 2. Historias Narrativas 
     const movNac = datos['NACIONAL'] || '0';
     const movInt = datos['INTERNACIONAL'] || '0';
-    setSafeHTML(document.getElementById('b15-mov-desc'), `La proyección global de nuestra comunidad estudiantil se fortalece a través de los programas de intercambio. Actualmente contamos con una participación de <strong style="color: var(--uaa-navy); font-size: 30px;">${movNac}</strong> estudiantes en movilidad académica a nivel nacional y <strong style="color: var(--uaa-navy); font-size: 30px;">${movInt}</strong> estudiantes a nivel internacional.`);
+    setSafeHTML(document.getElementById('b16-mov-desc'), `La proyección global de nuestra comunidad estudiantil se fortalece a través de los programas de intercambio. Actualmente contamos con una participación de <strong style="color: var(--uaa-navy); font-size: 30px;">${movNac}</strong> estudiantes en movilidad académica a nivel nacional y <strong style="color: var(--uaa-navy); font-size: 30px;">${movInt}</strong> estudiantes a nivel internacional.`);
 
     const incTot = datos['TOTAL PROYECTOS'] || '0';
     const incStart = datos['STARTUPS'] || '0';
-    setSafeHTML(document.getElementById('b15-inc-desc'), `Fomentamos el emprendimiento universitario impulsando iniciativas innovadoras. Nuestra incubadora respalda activamente <strong style="color: var(--uaa-navy); font-size: 30px;">${incTot}</strong> proyectos de negocios, de los cuales <strong style="color: var(--uaa-gold-vibrant); font-size: 30px;">${incStart}</strong> han logrado consolidarse exitosamente como <em>startups</em> en el mercado actual.`);
+    setSafeHTML(document.getElementById('b16-inc-desc'), `Fomentamos el emprendimiento universitario impulsando iniciativas innovadoras. Nuestra incubadora respalda activamente <strong style="color: var(--uaa-navy); font-size: 30px;">${incTot}</strong> proyectos de negocios, de los cuales <strong style="color: var(--uaa-gold-vibrant); font-size: 30px;">${incStart}</strong> han logrado consolidarse exitosamente como <em>startups</em> en el mercado actual.`);
 
     // 3. Párrafos de la Feria Ambiental
     const pFeria = `Durante ${datos['FECHA'] || ''} se llevó a cabo la ${datos['EDICION'] || ''} ${datos['NOMBRE'] || ''}, ${datos['CUERPO'] || ''}`;
-    document.getElementById('b15-feria-p1').innerText = pFeria;
-    document.getElementById('b15-feria-res').innerText = datos['RESULTADOS'] || '';
+    document.getElementById('b16-feria-p1').innerText = pFeria;
+    document.getElementById('b16-feria-res').innerText = datos['RESULTADOS'] || '';
     
-    const feriaConcl = document.getElementById('b15-feria-concl');
+    const feriaConcl = document.getElementById('b16-feria-concl');
     if (datos['CONCLUSION']) {
         feriaConcl.innerText = datos['CONCLUSION'];
         feriaConcl.style.display = 'block';
@@ -2305,7 +2459,7 @@ fetchSheetData('15_Otros').then(data => {
         const imgTag = item.img ? `<img src="${escapeHTML(item.img)}" alt="${escapeHTML(item.material)}" style="width: 100%; height: 100%; object-fit: contain; opacity: 0.85;">` : '';
 
         htmlDesglose += `
-        <div class="b15-feria-card" style="background: #FFFFFF; border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 12px rgba(22, 48, 114, 0.05); transition: transform 0.2s, box-shadow 0.2s; cursor: default;">
+        <div class="b16-feria-card" style="background: #FFFFFF; border-radius: 16px; padding: 20px 24px; display: flex; align-items: center; gap: 18px; box-shadow: 0 4px 12px rgba(22, 48, 114, 0.05); transition: transform 0.2s, box-shadow 0.2s; cursor: default;">
             <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(21, 96, 130, 0.05); display: flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 10px;">
             <div style="width: 100%; height: 100%;">
                 ${imgTag}
@@ -2320,12 +2474,12 @@ fetchSheetData('15_Otros').then(data => {
         </div>
         `;
     });
-    const feriaDesglose = document.getElementById('b15-feria-desglose');
+    const feriaDesglose = document.getElementById('b16-feria-desglose');
     setSafeHTML(feriaDesglose, htmlDesglose);
 
     // Efecto hover (antes con onmouseover/onmouseout en línea, que el saneador elimina)
     if (feriaDesglose) {
-        feriaDesglose.querySelectorAll('.b15-feria-card').forEach(card => {
+        feriaDesglose.querySelectorAll('.b16-feria-card').forEach(card => {
             card.addEventListener('mouseenter', () => {
                 card.style.transform = 'translateY(-3px)';
                 card.style.boxShadow = '0 12px 24px rgba(22, 48, 114, 0.12)';
@@ -2357,7 +2511,7 @@ fetchSheetData('15_Otros').then(data => {
 
     // 5. Detonador de animaciones
     setTimeout(() => {
-        const cardsContainer = document.getElementById('bloque-15-cards');
+        const cardsContainer = document.getElementById('bloque-16-cards');
         if(!cardsContainer) return;
 
         cardsContainer.querySelectorAll('.counter').forEach(c => {
@@ -2369,7 +2523,7 @@ fetchSheetData('15_Otros').then(data => {
     }, 50);
 
 })
-.catch(error => console.error('Detalle del error en Bloque 15:', error));
+.catch(error => console.error('Detalle del error en Bloque 16:', error));
 });
 
 // =========================================================================

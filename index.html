@@ -1638,14 +1638,148 @@
       </article>
     </section>
 
-    <!-- BLOQUE 15: OTROS DATOS -->
+    <!-- BLOQUE 15: ESCUELAS INCORPORADAS -->
     <div class="block-divider"></div>
     <header id="bloque-15" class="block-header reveal">
       <div class="block-tag"><span>15</span> <span id="b15-tag-text">...</span></div>
       <h1 class="block-title" id="b15-title">...</h1>
+      <div class="block-lead-wrap">
+        <p class="block-lead" id="b15-lead">...</p>
+        <div class="block-date" id="b15-date">...</div>
+      </div>
     </header>
 
     <section class="grid" id="bloque-15-cards">
+
+      <!-- Tarjeta principal: total de escuelas y trayectoria -->
+      <article class="card card-12 reveal">
+        <div class="hero-metric-content">
+          <div>
+            <div class="hero-metric-label" id="b15-t1-tag">...</div>
+            <div class="hero-metric-desc" id="b15-t1-desc" style="margin-top: 4px;">...</div>
+          </div>
+          <div class="hero-metric-num-wrap">
+            <div class="hero-metric-num counter" id="b15-total" data-target="0">0</div>
+            <div class="metric-unit" style="font-size: 13px; margin-top: 2px;">Escuelas incorporadas</div>
+            <div class="hero-metric-bar-yellow" style="margin-top: 6px;"></div>
+          </div>
+        </div>
+
+        <!-- Línea de tiempo: de la primera incorporación a la fecha de corte -->
+        <div class="b15-timeline" id="b15-timeline">
+          <div class="b15-tl-bar">
+            <span class="b15-tl-badge"><strong id="b15-anios">0</strong> años de trayectoria</span>
+            <span class="b15-tl-dot b15-tl-dot--start"></span>
+            <span class="b15-tl-line">
+              <span class="b15-tl-mark"></span>
+              <span class="b15-tl-mark"></span>
+              <span class="b15-tl-mark"></span>
+              <span class="b15-tl-mark"></span>
+              <span class="b15-tl-mark"></span>
+            </span>
+            <span class="b15-tl-dot b15-tl-dot--end"></span>
+          </div>
+          <div class="b15-tl-labels">
+            <div class="b15-tl-label">
+              <span class="b15-tl-year" id="b15-anio">----</span>
+              <span class="b15-tl-text">Se incorpora el primer bachillerato</span>
+            </div>
+            <div class="b15-tl-label b15-tl-label--end">
+              <span class="b15-tl-year" id="b15-anio-actual">----</span>
+              <span class="b15-tl-text"><strong id="b15-total-tl">0</strong> escuelas incorporadas acumuladas a la fecha</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Escuelas con plan de estudios -->
+      <article class="card card-4 flex-col-between reveal">
+        <div>
+          <div class="flex-row-start">
+            <div class="icon-box icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg></div>
+            <h3 class="card-title md" id="b15-t2-tag">...</h3>
+          </div>
+          <div class="metric-md counter" id="b15-plan-num" data-target="0" style="font-size: 36px; margin-bottom: 8px;">0
+          </div>
+          <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
+          <p class="metric-subtext"><strong id="b15-plan-de">0 de 0</strong> escuelas incorporadas, es decir, el
+            <strong id="b15-plan-pct-txt">0%</strong> del total.</p>
+        </div>
+        <!-- Una figura por escuela: rellena = trabaja con plan de estudios -->
+        <div class="b15-schools" id="b15-schools" role="img" aria-label=""></div>
+      </article>
+
+      <!-- Profesores involucrados -->
+      <article class="card card-4 flex-col-between reveal">
+        <div>
+          <div class="flex-row-start">
+            <div class="icon-box icon-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg></div>
+            <h3 class="card-title md" id="b15-t3-tag">...</h3>
+          </div>
+          <div class="metric-md counter" id="b15-prof-num" data-target="0" style="font-size: 36px; margin-bottom: 8px;">0
+          </div>
+          <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
+          <p class="metric-subtext" id="b15-t3-desc">...</p>
+        </div>
+      </article>
+
+      <!-- Estudiantes egresados -->
+      <article class="card card-4 flex-col-between reveal">
+        <div>
+          <div class="flex-row-start">
+            <div class="icon-box icon-magenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 10 12 5 2 10l10 5 10-5z"></path>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                <path d="M22 10v6"></path>
+              </svg></div>
+            <h3 class="card-title md" id="b15-t4-tag">...</h3>
+          </div>
+          <div class="metric-md counter" id="b15-egr-num" data-target="0" style="font-size: 36px; margin-bottom: 8px;">0
+          </div>
+          <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
+          <p class="metric-subtext" id="b15-t4-desc">...</p>
+        </div>
+      </article>
+
+      <!-- Directorio (enlace desde el Sheets) -->
+      <article class="card card-12 reveal b15-cta" id="b15-cta">
+        <div class="b15-cta-info">
+          <div class="icon-box lg icon-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 21h18"></path>
+              <path d="M5 21V7l7-4 7 4v14"></path>
+              <path d="M9 21v-6h6v6"></path>
+              <path d="M9 10h.01M15 10h.01"></path>
+            </svg></div>
+          <div>
+            <h3 class="card-title lg" style="margin-bottom: 4px;">Directorio de Escuelas Incorporadas</h3>
+            <p class="metric-subtext" style="margin: 0;">Consulta el directorio oficial de escuelas incorporadas a la UAA.</p>
+          </div>
+        </div>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="b15-cta-btn" id="b15-link">Ver directorio
+          &#8599;</a>
+      </article>
+    </section>
+
+    <!-- BLOQUE 16: OTROS DATOS -->
+    <div class="block-divider"></div>
+    <header id="bloque-16" class="block-header reveal">
+      <div class="block-tag"><span>16</span> <span id="b16-tag-text">...</span></div>
+      <h1 class="block-title" id="b16-title">...</h1>
+    </header>
+
+    <section class="grid" id="bloque-16-cards">
 
       <!-- Tarjeta Movilidad (Diseño Narrativo) -->
       <article class="card card-6 flex-col-between reveal"
@@ -1664,7 +1798,7 @@
             <h3 class="card-title lg">Movilidad Académica</h3>
           </div>
           <!-- TEXTO MÁS NÍTIDO Y OSCURO -->
-          <p id="b15-mov-desc"
+          <p id="b16-mov-desc"
             style="font-size: 15.5px; line-height: 1.6lh; margin-bottom: 24px; text-align: justify; color: var(--text-primary);">
             ...
           </p>
@@ -1691,7 +1825,7 @@
             <h3 class="card-title lg">Incubadora de Negocios</h3>
           </div>
           <!-- TEXTO MÁS NÍTIDO Y OSCURO -->
-          <p id="b15-inc-desc"
+          <p id="b16-inc-desc"
             style="font-size: 15.5px; line-height: 1.6lh; margin-bottom: 24px; text-align: justify; color: var(--text-primary);">
             ...
           </p>
@@ -1713,23 +1847,23 @@
           <h3 class="card-title lg">Feria Ambiental Universitaria</h3>
         </div>
 
-        <p id="b15-feria-p1"
+        <p id="b16-feria-p1"
           style="font-size: 16px; margin-bottom: 24px; color: var(--text-primary); line-height: 1.6;">...</p>
 
         <div
           style="background: rgba(21, 96, 130, 0.04); padding: clamp(16px, 2.2vw, 32px); border-radius: 20px; border: 1px solid rgba(21, 96, 130, 0.1);">
-          <p id="b15-feria-res"
+          <p id="b16-feria-res"
             style="font-size: 15.5px; margin-bottom: 28px; color: var(--uaa-navy); font-weight: 600; line-height: 1.5;">
             ...</p>
 
           <!-- Contenedor Grid MÁS GRANDE (280px) -->
-          <div id="b15-feria-desglose"
+          <div id="b16-feria-desglose"
             style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
             <!-- JS inyectará las tarjetas de materiales aquí -->
           </div>
         </div>
 
-        <p id="b15-feria-concl"
+        <p id="b16-feria-concl"
           style="font-size: 15.5px; margin-top: 24px; text-align: justify; color: var(--text-primary); display: none; line-height: 1.6;">
           ...</p>
       </article>
@@ -1737,8 +1871,8 @@
 
     <!-- BLOQUE FINAL: DUDAS Y CONTACTO -->
     <div class="block-divider"></div>
-    <header id="bloque-16" class="block-header reveal">
-      <div class="block-tag"><span>16</span> <span id="b16-tag-text">Contacto</span></div>
+    <header id="bloque-17" class="block-header reveal">
+      <div class="block-tag"><span>17</span> <span id="b17-tag-text">Contacto</span></div>
       <h1 class="block-title">¿Tienes alguna duda?</h1>
       <div class="block-lead-wrap">
         <p class="block-lead">Si requieres mayor detalle o información adicional sobre la estadística institucional, no
@@ -1856,8 +1990,9 @@
         </li>
         <li class="nav-menu-item"><a href="#bloque-14"><span class="nav-badge-num">14</span> Informes y Reportes</a>
         </li>
-        <li class="nav-menu-item"><a href="#bloque-15"><span class="nav-badge-num">15</span> Otros Datos</a></li>
-        <li class="nav-menu-item"><a href="#bloque-16"><span class="nav-badge-num">16</span> Dudas y Contacto</a></li>
+        <li class="nav-menu-item"><a href="#bloque-15"><span class="nav-badge-num">15</span> Escuelas Incorporadas</a></li>
+        <li class="nav-menu-item"><a href="#bloque-16"><span class="nav-badge-num">16</span> Otros Datos</a></li>
+        <li class="nav-menu-item"><a href="#bloque-17"><span class="nav-badge-num">17</span> Dudas y Contacto</a></li>
       </ul>
     </div>
 

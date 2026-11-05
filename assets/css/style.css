@@ -2937,3 +2937,53 @@ a.email-link:hover {
     background: var(--uaa-teal);
     transform: translateY(-2px);
 }
+
+
+/* Preguntas sugeridas del chatbot */
+.chatbot-suggestions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    margin: 4px 0 8px;
+}
+
+.chatbot-suggestions[hidden] {
+    display: none;
+}
+
+.chatbot-suggestion {
+    max-width: 90%;
+    padding: 8px 14px;
+    border: 1.5px solid var(--uaa-teal);
+    border-radius: 18px;
+    background: #fff;
+    color: var(--uaa-navy);
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.chatbot-suggestion:hover,
+.chatbot-suggestion:focus-visible {
+    background: var(--uaa-teal);
+    color: #fff;
+}
+
+.chatbot-suggestion:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Nota al final del área de conversación del chatbot */
+.chatbot-footer-note {
+    padding: 6px 18px 8px;
+    background: rgba(238, 242, 246, 0.6);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.3;
+}

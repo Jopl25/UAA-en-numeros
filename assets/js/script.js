@@ -2839,7 +2839,7 @@ function crearMensajeChatbot(clase, contenido, esHTML = false) {
     return mensaje;
 }
 
-async function enviarMensajeChatbot() {
+async function enviarMensajeChatbot(textoPredefinido) {
 
     if (!chatbotInput || !chatbotMessages) return;
 
@@ -2849,12 +2849,17 @@ async function enviarMensajeChatbot() {
         return;
     }
 
-    const pregunta = chatbotInput.value.trim().slice(0, CHATBOT_MAX_LENGTH);
+    const origen = typeof textoPredefinido === 'string' ? textoPredefinido : chatbotInput.value;
+    const pregunta = origen.trim().slice(0, CHATBOT_MAX_LENGTH);
 
     // No enviar mensajes vacíos
     if (!pregunta) {
         return;
     }
+
+    // Al enviar el primer mensaje, se ocultan las preguntas sugeridas
+    const sugerencias = document.getElementById('chatbot-suggestions');
+    if (sugerencias) sugerencias.remove();
 
     chatbotEnviando = true;
     chatbotUltimoEnvio = ahora;
@@ -2976,6 +2981,19 @@ if (chatbotSend) {
     });
 
 }
+
+
+/* Preguntas sugeridas */
+
+document.querySelectorAll('.chatbot-suggestion').forEach((boton) => {
+
+    boton.addEventListener('click', () => {
+
+        enviarMensajeChatbot(boton.textContent);
+
+    });
+
+});
 
 
 /* Tecla Enter */

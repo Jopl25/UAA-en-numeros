@@ -25,7 +25,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Georama:wght@400;500;600;700&family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/style.css?v=2026-10-20c">
+  <link rel="stylesheet" href="assets/css/style.css?v=2026-11-05c">
   <!-- SheetJS 0.20.3 (corrige CVE-2023-30533 y CVE-2024-22363). Integridad verificada con SRI. -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"
     integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT"
@@ -2060,7 +2060,7 @@
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
           </svg>
           <p>
-            Este asistente utiliza inteligencia artificial y sus respuestas pueden contener errores.
+            Uso inteligencia artificial y mis respuestas pueden contener errores.
             La información es únicamente informativa y no tiene validez oficial.
             Para datos oficiales, consulte al
             <strong>Departamento de Estadística Institucional</strong>.
@@ -2068,15 +2068,19 @@
         </div>
 
         <!-- Mensaje inicial del bot -->
-        <div class="chatbot-message bot-message">
+        <div class="chatbot-message bot-message" style="font-weight: bold;">
 
           <div class="message-bubble">
-            Hola. Soy el asistente de <strong>UAA en Números</strong>.
-            <br><br>
-            Puedo ayudarte a consultar información estadística institucional.
             ¿Qué te gustaría saber?
           </div>
 
+        </div>
+
+        <!-- Preguntas sugeridas (desaparecen al enviar el primer mensaje) -->
+        <div id="chatbot-suggestions" class="chatbot-suggestions" role="group" aria-label="Preguntas sugeridas">
+          <button type="button" class="chatbot-suggestion">¿Cuántos estudiantes tenemos?</button>
+          <button type="button" class="chatbot-suggestion">Número de egresados de la UAA?</button>
+          <button type="button" class="chatbot-suggestion">¿Cuántas investigadoras hay?</button>
         </div>
 
       </div>
@@ -2091,6 +2095,11 @@
         <span></span>
         <span></span>
 
+      </div>
+
+      <!-- Nota al final del área de conversación -->
+      <div class="chatbot-footer-note">
+        Solo respondo sobre información publicada en este sitio
       </div>
 
       <!-- Entrada de pregunta -->
@@ -2149,7 +2158,7 @@
 
   </div>
 
-  <script type="module" src="assets/js/script.js?v=2026-11-05a"></script>
+  <script type="module" src="assets/js/script.js?v=2026-11-05b"></script>
 </body>
 
 </html>

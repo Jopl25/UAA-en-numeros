@@ -2644,6 +2644,8 @@ const chatbotMessages = document.getElementById('chatbot-messages');
 const CHATBOT_MAX_LENGTH = 150;       // caracteres máximos por pregunta
 const CHATBOT_MIN_INTERVAL_MS = 1500; // tiempo mínimo entre envíos
 const CHATBOT_TIMEOUT_MS = 60000;     // tiempo máximo de espera de la respuesta
+const MAX_HISTORIAL = 3;              // cantidad de mensajes previos del usuario que se envían
+const historialUsuario = [];          // últimos mensajes del usuario
 let chatbotEnviando = false;
 let chatbotUltimoEnvio = 0;
 
@@ -2880,6 +2882,11 @@ async function enviarMensajeChatbot() {
     // Desplazar conversación hacia abajo
     chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 
+    // Historial: últimos mensajes previos del usuario (sin incluir la pregunta actual)
+    const historial = historialUsuario.slice(-MAX_HISTORIAL);
+    historialUsuario.push(pregunta);
+    if (historialUsuario.length > MAX_HISTORIAL) historialUsuario.shift();
+
     const controlador = new AbortController();
     const temporizador = setTimeout(() => controlador.abort(), CHATBOT_TIMEOUT_MS);
 
@@ -2895,7 +2902,8 @@ async function enviarMensajeChatbot() {
                 },
 
                 body: JSON.stringify({
-                    pregunta: pregunta
+                    pregunta: pregunta,
+                    historial: historial
                 }),
 
                 signal: controlador.signal,

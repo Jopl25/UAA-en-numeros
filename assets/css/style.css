@@ -1581,8 +1581,8 @@ body::before {
 }
 
 .glass-modal {
-    width: 90%;
-    max-width: 900px;
+    width: 96%;
+    max-width: 1500px;
     max-height: 85vh;
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(30px);
@@ -1598,6 +1598,17 @@ body::before {
 
 .glass-modal-overlay.open .glass-modal {
     transform: translateY(0);
+}
+
+/* Reserva el espacio inferior izquierdo del asistente sin modificar el chatbot. */
+#modalCentros.glass-modal-overlay {
+    justify-content: flex-start;
+    padding: 0 20px 0 clamp(270px, 15vw, 300px);
+    box-sizing: border-box;
+}
+
+#modalCentros .glass-modal {
+    width: 100%;
 }
 
 .modal-header {
@@ -1638,6 +1649,36 @@ body::before {
     overflow-y: auto;
 }
 
+.matricula-modal-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: flex-start;
+    overflow: hidden;
+}
+
+.matricula-table-scroll {
+    min-width: 0;
+    max-height: calc(85vh - 90px);
+    overflow: auto;
+}
+
+@media (max-width: 1000px) {
+    #modalCentros.glass-modal-overlay {
+        justify-content: center;
+        align-items: flex-start;
+        padding: 2vh 2vw 0;
+    }
+
+    #modalCentros .glass-modal {
+        max-height: 76vh;
+    }
+
+    .matricula-table-scroll {
+        width: 100%;
+        max-height: calc(76vh - 90px);
+    }
+}
+
 .glass-table {
     width: 100%;
     border-collapse: collapse;
@@ -1675,19 +1716,47 @@ body::before {
     color: var(--text-secondary);
 }
 
+.row-center {
+    cursor: pointer;
+}
+
+.row-center:hover td,
+.row-center:focus td {
+    background: rgba(22, 48, 114, 0.06);
+}
+
+.row-center:focus {
+    outline: 2px solid var(--uaa-teal);
+    outline-offset: -2px;
+}
+
+.center-toggle {
+    display: inline-block;
+    width: 1.25em;
+    color: var(--uaa-teal);
+    font-weight: 700;
+}
+
+.row-career.is-collapsed {
+    display: none !important;
+}
+
 .row-center td:first-child {
     padding-left: clamp(24px, 4vw, 48px);
     position: relative;
 }
 
 .row-center td:first-child::before {
-    content: '';
-    position: absolute;
-    left: 28px;
-    top: 50%;
-    width: 8px;
-    height: 1px;
-    background: var(--uaa-teal);
+    content: none;
+}
+
+.row-career td {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.row-career td:first-child {
+    padding-left: clamp(42px, 6vw, 68px);
 }
 
 .text-right {

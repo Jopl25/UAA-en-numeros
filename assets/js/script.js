@@ -8,6 +8,32 @@ const LOCAL_XLSX_FILE = 'BD_UAA EN NUM.xlsx';
 // Solo cambiar si el documento cambia
 const SPREADSHEET_ID = '1ZWcV0JuWVLMn4NmZFcjGE6D0R16Wuar5477HOvgILew';
 
+// Detección 100% automática de entorno según el origen actual:
+// - Orígenes locales: http://localhost:5500, http://127.0.0.1:5500, http://localhost:5501, http://127.0.0.1:5501
+// - Orígenes de producción: https://jopl25.github.io, https://www.uaa.mx, https://uaa.mx
+const ORIGENES_LOCALES_PERMITIDOS = new Set([
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+    'http://localhost:5501',
+    'http://127.0.0.1:5501'
+]);
+const ES_CHATBOT_LOCAL = typeof window !== 'undefined' && (
+    ORIGENES_LOCALES_PERMITIDOS.has(window.location.origin) ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+);
+const CHATBOT_API_URL_LOCAL = 'http://localhost:3000/api/chat';
+const CHATBOT_API_URL_PROD = 'https://chatbot-uaa-en-numeros.onrender.com/api/chat';
+const CHATBOT_API_URL = ES_CHATBOT_LOCAL ? CHATBOT_API_URL_LOCAL : CHATBOT_API_URL_PROD;
+
+// En producción (jopl25.github.io, uaa.mx) se refuerza automáticamente la CSP estricta
+if (!ES_CHATBOT_LOCAL && typeof document !== 'undefined' && document.head) {
+    const metaCspProd = document.createElement('meta');
+    metaCspProd.httpEquiv = 'Content-Security-Policy';
+    metaCspProd.content = "connect-src 'self' https://docs.google.com https://*.googleusercontent.com https://chatbot-uaa-en-numeros.onrender.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.clarity.ms https://*.clarity.ms; upgrade-insecure-requests";
+    document.head.appendChild(metaCspProd);
+}
+
 // =======================================================================
 // UTILIDADES DE SEGURIDAD (prevención de XSS)
 // Todo contenido proveniente de Google Sheets, del XLSX local o del
@@ -2601,6 +2627,32 @@ fetchSheetData('Dudas').then(data => {
 const chatbotLauncher = document.getElementById('chatbot-launcher');
 const chatbotWindow = document.getElementById('chatbot-window');
 const chatbotClose = document.getElementById('chatbot-close');
+const chatbotFooterNote = document.querySelector('.chatbot-footer-note');
+
+/** Actualiza la nota inferior del chat (exclusivamente en entorno local) para indicar qué servidor está activo. */
+function actualizarNotaServidorLocal(estado) {
+    if (!ES_CHATBOT_LOCAL || !chatbotFooterNote) return;
+    if (estado === 'local') {
+        chatbotFooterNote.textContent = '🟢 Modo pruebas: Conectado a Servidor Local (localhost:3000)';
+    } else if (estado === 'render') {
+        chatbotFooterNote.textContent = '☁️ Modo pruebas: Conectado a Render (servidor local apagado)';
+    }
+}
+
+/** Verifica silenciosamente en entorno local si node servidor.js está encendido al abrir la ventana del chat. */
+async function verificarEstadoServidorLocal() {
+    if (!ES_CHATBOT_LOCAL) return;
+    try {
+        const res = await fetch('http://localhost:3000/', {
+            method: 'GET',
+            signal: AbortSignal.timeout(1500),
+            credentials: 'omit'
+        });
+        actualizarNotaServidorLocal(res.ok ? 'local' : 'render');
+    } catch (_) {
+        actualizarNotaServidorLocal('render');
+    }
+}
 
 if (chatbotLauncher && chatbotWindow && chatbotClose) {
 
@@ -2613,6 +2665,8 @@ if (chatbotLauncher && chatbotWindow && chatbotClose) {
         // Forzar reflow para que la transición CSS se active
         void chatbotWindow.offsetHeight;
         chatbotWindow.classList.add('chatbot-open');
+
+        verificarEstadoServidorLocal();
 
     });
 
@@ -2839,6 +2893,37 @@ function crearMensajeChatbot(clase, contenido, esHTML = false) {
     return mensaje;
 }
 
+/** Muestra botones de preguntas sugeridas relacionadas debajo de la respuesta del bot. */
+function renderizarSugerenciasChatbot(listaSugerencias) {
+    if (!chatbotMessages || !Array.isArray(listaSugerencias) || listaSugerencias.length === 0) return;
+
+    const previo = document.getElementById('chatbot-suggestions');
+    if (previo) previo.remove();
+
+    const contenedor = document.createElement('div');
+    contenedor.id = 'chatbot-suggestions';
+    contenedor.className = 'chatbot-suggestions';
+    contenedor.setAttribute('role', 'group');
+    contenedor.setAttribute('aria-label', 'Preguntas sugeridas');
+
+    listaSugerencias.slice(0, 3).forEach((texto) => {
+        if (typeof texto !== 'string' || !texto.trim()) return;
+        const preguntaSugerida = texto.trim();
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'chatbot-suggestion';
+        boton.textContent = preguntaSugerida;
+        boton.addEventListener('click', () => {
+            enviarMensajeChatbot(preguntaSugerida);
+        });
+        contenedor.appendChild(boton);
+    });
+
+    if (contenedor.childElementCount > 0) {
+        chatbotMessages.appendChild(contenedor);
+    }
+}
+
 async function enviarMensajeChatbot(textoPredefinido) {
 
     if (!chatbotInput || !chatbotMessages) return;
@@ -2897,24 +2982,34 @@ async function enviarMensajeChatbot(textoPredefinido) {
 
     try {
 
-        const response = await fetch(
-            'https://chatbot-uaa-en-numeros.onrender.com/api/chat',
-            {
-                method: 'POST',
+        const opcionesFetch = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                pregunta: pregunta,
+                historial: historial
+            }),
+            signal: controlador.signal,
+            credentials: 'omit'
+        };
 
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-
-                body: JSON.stringify({
-                    pregunta: pregunta,
-                    historial: historial
-                }),
-
-                signal: controlador.signal,
-                credentials: 'omit'
+        let response;
+        if (ES_CHATBOT_LOCAL) {
+            try {
+                response = await fetch(CHATBOT_API_URL_LOCAL, opcionesFetch);
+                actualizarNotaServidorLocal('local');
+                console.info('🟢 Chatbot conectado a servidor LOCAL (' + CHATBOT_API_URL_LOCAL + ')');
+            } catch (errorLocal) {
+                if (controlador.signal.aborted) throw errorLocal;
+                actualizarNotaServidorLocal('render');
+                console.warn('☁️ Servidor local no disponible; usando Render como respaldo...');
+                response = await fetch(CHATBOT_API_URL_PROD, opcionesFetch);
             }
-        );
+        } else {
+            response = await fetch(CHATBOT_API_URL_PROD, opcionesFetch);
+        }
 
         // Si el servidor no devuelve JSON válido, se trata como error
         let resultado = {};
@@ -2938,6 +3033,11 @@ async function enviarMensajeChatbot(textoPredefinido) {
         const mensajeBot = crearMensajeChatbot('bot-message', respuesta, true);
 
         chatbotMessages.appendChild(mensajeBot);
+
+        // Mostrar nuevas sugerencias relacionadas con la consulta actual
+        if (resultado && Array.isArray(resultado.sugerencias) && resultado.sugerencias.length > 0) {
+            renderizarSugerenciasChatbot(resultado.sugerencias);
+        }
 
     } catch (error) {
 

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- CSP: limita scripts y conexiones a los servicios utilizados por el sitio. -->
+  <!-- CSP base: el modo 'local' o 'produccion' se controla automáticamente desde CHATBOT_ENTORNO en assets/js/script.js -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
     base-uri 'self';
@@ -14,9 +14,8 @@
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: https:;
-    connect-src 'self' https://docs.google.com https://*.googleusercontent.com https://chatbot-uaa-en-numeros.onrender.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.clarity.ms https://*.clarity.ms;
-    worker-src 'self' blob:;
-    upgrade-insecure-requests">
+    connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://docs.google.com https://*.googleusercontent.com https://chatbot-uaa-en-numeros.onrender.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.clarity.ms https://*.clarity.ms;
+    worker-src 'self' blob:;">
   <title>UAA en Números — Estadística Institucional</title>
 
   <!-- Fuentes tipográficas -->

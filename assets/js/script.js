@@ -838,7 +838,7 @@ fetchSheetData('01_Matricula', true).then(data => {
         subtotalCentro = { mas: 0, fem: 0, x: 0, total: 0 };
         const centro = matriculaPorCarrera.filter(item => item.nivelOriginal === c.nivelOriginal && item.centro === c.centro);
         subtotalCentro = centro.reduce((s, item) => ({ mas: s.mas + item.mas, fem: s.fem + item.fem, x: s.x + item.x, total: s.total + item.filaTotal }), subtotalCentro);
-        htmlTabla += `<tr class="row-center" data-center-group="${grupoCentro}" tabindex="0" role="button" aria-expanded="false" aria-label="Desglosar carreras de ${escapeHTML(c.centro)}"><td><span class="center-toggle" aria-hidden="true">＋</span>${escapeHTML(c.centro)}</td><td class="text-right">${subtotalCentro.total.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.x.toLocaleString('es-MX')}</td></tr>`;
+        htmlTabla += `<tr class="row-center" data-center-group="${grupoCentro}" tabindex="0" role="button" aria-expanded="false" aria-label="Desglosar carreras de ${escapeHTML(c.centro)}"><td><span class="center-cell"><span class="center-toggle" aria-hidden="true"></span><span class="center-icon" aria-hidden="true"></span><span class="center-name">${escapeHTML(c.centro)}</span></span></td><td class="text-right">${subtotalCentro.total.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.x.toLocaleString('es-MX')}</td></tr>`;
         }
         htmlTabla += `<tr class="row-career is-collapsed" data-center-detail="${grupoCentro}"><td>${escapeHTML(c.carrera || 'NA')}</td><td class="text-right">${c.filaTotal.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.x.toLocaleString('es-MX')}</td></tr>`;
     });
@@ -849,7 +849,6 @@ fetchSheetData('01_Matricula', true).then(data => {
         const toggleCentro = row => {
             const expanded = row.getAttribute('aria-expanded') === 'true';
             row.setAttribute('aria-expanded', String(!expanded));
-            row.querySelector('.center-toggle').textContent = expanded ? '+' : '-';
             tbody.querySelectorAll(`[data-center-detail="${row.dataset.centerGroup}"]`).forEach(detail => { detail.classList.toggle('is-collapsed', expanded); });
         };
         tbody.querySelectorAll('.row-center').forEach(row => {

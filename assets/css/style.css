@@ -1581,8 +1581,8 @@ body::before {
 }
 
 .glass-modal {
-    width: 90%;
-    max-width: 900px;
+    width: 96%;
+    max-width: 1500px;
     max-height: 85vh;
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(30px);
@@ -1598,6 +1598,44 @@ body::before {
 
 .glass-modal-overlay.open .glass-modal {
     transform: translateY(0);
+}
+
+/* Reserva el espacio inferior izquierdo del asistente sin modificar el chatbot. */
+#modalCentros.glass-modal-overlay {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 960px) 1fr;
+    align-items: center;
+    padding: 0 20px;
+    box-sizing: border-box;
+}
+
+#modalCentros .glass-modal {
+    grid-column: 2;
+    width: 100%;
+    max-width: 960px;
+}
+
+.matricula-modal-hint {
+    grid-column: 3;
+    justify-self: start;
+    align-self: center;
+    width: clamp(220px, 18vw, 330px);
+    max-width: 100%;
+    height: auto;
+    margin-left: clamp(6px, 0.8vw, 14px);
+    pointer-events: none;
+    user-select: none;
+    filter: drop-shadow(0 12px 24px rgba(16, 22, 38, 0.18));
+    animation: matricula-hint-float 2.8s ease-in-out infinite;
+}
+
+@keyframes matricula-hint-float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
 }
 
 .modal-header {
@@ -1638,6 +1676,41 @@ body::before {
     overflow-y: auto;
 }
 
+.matricula-modal-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: flex-start;
+    overflow: hidden;
+}
+
+.matricula-table-scroll {
+    min-width: 0;
+    max-height: calc(85vh - 90px);
+    overflow: auto;
+}
+
+@media (max-width: 1000px) {
+    #modalCentros.glass-modal-overlay {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 2vh 2vw 0;
+    }
+
+    .matricula-modal-hint {
+        display: none;
+    }
+
+    #modalCentros .glass-modal {
+        max-height: 76vh;
+    }
+
+    .matricula-table-scroll {
+        width: 100%;
+        max-height: calc(76vh - 90px);
+    }
+}
+
 .glass-table {
     width: 100%;
     border-collapse: collapse;
@@ -1675,19 +1748,99 @@ body::before {
     color: var(--text-secondary);
 }
 
+.row-center {
+    cursor: pointer;
+}
+
+.row-center:hover td,
+.row-center:focus td {
+    background: rgba(22, 48, 114, 0.06);
+}
+
+.row-center:focus {
+    outline: 2px solid var(--uaa-teal);
+    outline-offset: -2px;
+}
+
+.center-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Botón con chevron ">" que gira hacia abajo al desplegar las carreras */
+.center-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 24px;
+    border-radius: 7px;
+    background: #fff;
+    border: 1px solid rgba(22, 48, 114, 0.12);
+    box-shadow: 0 1px 3px rgba(22, 48, 114, 0.12);
+    transition: border-color 0.2s;
+}
+
+.center-toggle::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-right: 2px solid var(--uaa-navy);
+    border-bottom: 2px solid var(--uaa-navy);
+    transform: translateX(-1px) rotate(-45deg);
+    transition: transform 0.25s ease;
+}
+
+.row-center[aria-expanded="true"] .center-toggle::before {
+    transform: translateY(-1px) rotate(45deg);
+}
+
+.row-center:hover .center-toggle,
+.row-center[aria-expanded="true"] .center-toggle {
+    border-color: rgba(22, 48, 114, 0.3);
+}
+
+/* Ícono de edificio institucional junto al nombre del centro */
+.center-icon {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    background-color: var(--uaa-navy);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 2 7v2h20V7L12 2zM4 11v7h2.5v-7H4zm5 0v7h2.5v-7H9zm4.5 0v7H16v-7h-2.5zm4.5 0v7h2v-7h-2zM2 20v2h20v-2H2z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 2 7v2h20V7L12 2zM4 11v7h2.5v-7H4zm5 0v7h2.5v-7H9zm4.5 0v7H16v-7h-2.5zm4.5 0v7h2v-7h-2zM2 20v2h20v-2H2z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.row-career.is-collapsed {
+    display: none !important;
+}
+
 .row-center td:first-child {
-    padding-left: clamp(24px, 4vw, 48px);
+    padding-left: clamp(16px, 2vw, 24px);
     position: relative;
 }
 
 .row-center td:first-child::before {
-    content: '';
-    position: absolute;
-    left: 28px;
-    top: 50%;
-    width: 8px;
-    height: 1px;
-    background: var(--uaa-teal);
+    content: none;
+}
+
+.row-career td {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.row-career td:first-child {
+    padding-left: clamp(76px, 7vw, 94px);
+}
+
+/* Columnas numéricas compactas para acercar los totales al nombre */
+.glass-table th:not(:first-child),
+.glass-table td:not(:first-child) {
+    width: 1%;
+    white-space: nowrap;
+    padding-left: clamp(10px, 1.5vw, 18px);
+    padding-right: clamp(10px, 1.5vw, 18px);
 }
 
 .text-right {

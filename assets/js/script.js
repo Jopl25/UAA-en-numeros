@@ -6,7 +6,8 @@ const USE_LOCAL_XLSX = false; // true = usa el archivo local .xlsx | false = Goo
 const LOCAL_XLSX_FILE = 'BD_UAA EN NUM.xlsx';
 // ID del documento de Google Sheets de donde se extrae la información
 // Solo cambiar si el documento cambia
-const SPREADSHEET_ID = '1ZWcV0JuWVLMn4NmZFcjGE6D0R16Wuar5477HOvgILew';
+// const SPREADSHEET_ID = '1ZWcV0JuWVLMn4NmZFcjGE6D0R16Wuar5477HOvgILew'; // ID original
+const SPREADSHEET_ID = '1B1-w5BKwALYvyzKYYEyrNa2gIJ5e0z1lT8MsCzVkr6s'; // ID alternativo para pruebas
 
 // Detección 100% automática de entorno según el origen actual:
 // - Orígenes locales: http://localhost:5500, http://127.0.0.1:5500, http://localhost:5501, http://127.0.0.1:5501
@@ -720,7 +721,7 @@ fetchSheetData('01_Matricula', true).then(data => {
     
     let totalGlobal = 0, masGlobal = 0, femGlobal = 0, xGlobal = 0;
     let textosInterfase = {};
-    let centrosAcademicos = [];
+    let matriculaPorCarrera = [];
     
     const nivelesResumen = {
         'Educación Media': { mas: 0, fem: 0, x: 0, total: 0 },
@@ -736,25 +737,26 @@ fetchSheetData('01_Matricula', true).then(data => {
         const row = data[i];
         if (!row || row.length === 0) continue;
 
-        // Mapeo Textos Naranjas (Col G -> row[6])
-        const keyTexto = (row[6] || '').trim();
+        // La columna Carrera desplaza los textos de interfaz de G a H.
+        const keyTexto = (row[7] || '').trim();
         if (keyTexto) {
         textosInterfase[keyTexto] = { 
-            h: (row[7] || '').trim(), 
-            i: (row[8] || '').trim(), 
-            j: (row[9] || '').trim() 
+            h: (row[8] || '').trim(),
+            i: (row[9] || '').trim(),
+            j: (row[10] || '').trim()
         };
         }
 
-        // Mapeo Números (Col A-E -> row[0] a row[4])
+        // Mapeo de la tabla nueva: nivel, centro, carrera y matrícula por género (A-F).
         const nivelOriginal = (row[0] || '').trim();
         
         // CORRECCIÓN: Le decimos que ignore específicamente la celda del encabezado para no sumarla
         if (nivelOriginal && nivelOriginal !== 'Nivel Académico') {
         const centro = (row[1] || '').trim();
-        const mas = cleanNum(row[2]);
-        const fem = cleanNum(row[3]);
-        const x = cleanNum(row[4]);
+        const carrera = (row[2] || '').trim();
+        const mas = cleanNum(row[3]);
+        const fem = cleanNum(row[4]);
+        const x = cleanNum(row[5]);
         const filaTotal = mas + fem + x;
 
         totalGlobal += filaTotal; 
@@ -769,7 +771,7 @@ fetchSheetData('01_Matricula', true).then(data => {
             nivelesResumen[nivelClave].x += x;
             nivelesResumen[nivelClave].total += filaTotal;
         }
-        centrosAcademicos.push({ nivelOriginal, centro, mas, fem, x, filaTotal });
+        matriculaPorCarrera.push({ nivelOriginal, centro, carrera, mas, fem, x, filaTotal });
         }
     }
 
@@ -795,8 +797,8 @@ fetchSheetData('01_Matricula', true).then(data => {
     const genderTitle = document.querySelector('.gender-card-title-group h3');
     const genderSub = document.querySelector('.gender-card-title-group p');
 
-    if (heroLbl && textosInterfase['TARJETA 1 PRIMERA LÍNEA']) setSafeHTML(heroLbl, textosInterfase['TARJETA 1 PRIMERA LÍNEA'].h);
-    if (heroDesc && textosInterfase['TARJETA 1 PRINCIPAL']) heroDesc.innerText = textosInterfase['TARJETA 1 PRINCIPAL'].h;
+    if (heroLbl && textosInterfase['TARJETA 1 PRINCIPAL']) setSafeHTML(heroLbl, textosInterfase['TARJETA 1 PRINCIPAL'].h);
+    if (heroDesc && textosInterfase['TARJETA 1 SECUNDARIA']) heroDesc.innerText = textosInterfase['TARJETA 1 SECUNDARIA'].h;
     if (genderTitle && textosInterfase['TÍTULO GRÁFICO']) genderTitle.innerText = textosInterfase['TÍTULO GRÁFICO'].h;
     if (genderSub && textosInterfase['SUBTÍTULO']) genderSub.innerText = textosInterfase['SUBTÍTULO'].h;
 
@@ -836,7 +838,7 @@ fetchSheetData('01_Matricula', true).then(data => {
 
     // 5. Tabla Modal
     let subtotalesModal = {};
-    centrosAcademicos.forEach(c => {
+    matriculaPorCarrera.forEach(c => {
         if (!subtotalesModal[c.nivelOriginal]) subtotalesModal[c.nivelOriginal] = { mas: 0, fem: 0, x: 0, total: 0 };
         subtotalesModal[c.nivelOriginal].mas += c.mas;
         subtotalesModal[c.nivelOriginal].fem += c.fem;
@@ -846,17 +848,45 @@ fetchSheetData('01_Matricula', true).then(data => {
 
     let htmlTabla = '';
     let nivelActual = '';
-    centrosAcademicos.forEach(c => {
+    let centroActual = '';
+    let grupoCentro = -1;
+    let subtotalCentro = { mas: 0, fem: 0, x: 0, total: 0 };
+    matriculaPorCarrera.forEach(c => {
         if (c.nivelOriginal !== nivelActual) {
         nivelActual = c.nivelOriginal;
+        centroActual = '';
         const sub = subtotalesModal[nivelActual];
-        htmlTabla += `<tr class="row-level"><td>${nivelActual.toUpperCase()}</td><td class="text-right">${sub.total.toLocaleString('es-MX')}</td><td class="text-right col-gender">${sub.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${sub.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${sub.x.toLocaleString('es-MX')}</td></tr>`;
+        htmlTabla += `<tr class="row-level"><td>${escapeHTML(nivelActual.toUpperCase())}</td><td class="text-right">${sub.total.toLocaleString('es-MX')}</td><td class="text-right col-gender">${sub.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${sub.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${sub.x.toLocaleString('es-MX')}</td></tr>`;
         }
-        htmlTabla += `<tr class="row-center"><td>${c.centro}</td><td class="text-right">${c.filaTotal.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.x.toLocaleString('es-MX')}</td></tr>`;
+        if (c.centro !== centroActual) {
+        centroActual = c.centro;
+        grupoCentro++;
+        subtotalCentro = { mas: 0, fem: 0, x: 0, total: 0 };
+        const centro = matriculaPorCarrera.filter(item => item.nivelOriginal === c.nivelOriginal && item.centro === c.centro);
+        subtotalCentro = centro.reduce((s, item) => ({ mas: s.mas + item.mas, fem: s.fem + item.fem, x: s.x + item.x, total: s.total + item.filaTotal }), subtotalCentro);
+        htmlTabla += `<tr class="row-center" data-center-group="${grupoCentro}" tabindex="0" role="button" aria-expanded="false" aria-label="Desglosar carreras de ${escapeHTML(c.centro)}"><td><span class="center-cell"><span class="center-toggle" aria-hidden="true"></span><span class="center-icon" aria-hidden="true"></span><span class="center-name">${escapeHTML(c.centro)}</span></span></td><td class="text-right">${subtotalCentro.total.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.x.toLocaleString('es-MX')}</td></tr>`;
+        }
+        htmlTabla += `<tr class="row-career is-collapsed" data-center-detail="${grupoCentro}"><td>${escapeHTML(c.carrera || 'NA')}</td><td class="text-right">${c.filaTotal.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.x.toLocaleString('es-MX')}</td></tr>`;
     });
     
     const tbody = document.querySelector('.glass-table tbody');
-    if (tbody) setSafeHTML(tbody, htmlTabla);
+    if (tbody) {
+        setSafeHTML(tbody, htmlTabla);
+        const toggleCentro = row => {
+            const expanded = row.getAttribute('aria-expanded') === 'true';
+            row.setAttribute('aria-expanded', String(!expanded));
+            tbody.querySelectorAll(`[data-center-detail="${row.dataset.centerGroup}"]`).forEach(detail => { detail.classList.toggle('is-collapsed', expanded); });
+        };
+        tbody.querySelectorAll('.row-center').forEach(row => {
+            row.addEventListener('click', () => toggleCentro(row));
+            row.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggleCentro(row);
+                }
+            });
+        });
+    }
     })
     .catch(error => {
     console.error('Detalle del error en Bloque 01:', error);

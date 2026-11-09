@@ -237,7 +237,7 @@
 
       <div class="matricula-action-wrapper reveal">
         <button id="open-modal-centros" class="block-action-link" style="background:none; border-top:none; border-left:none; border-right:none;">
-          Consultar Tabla de Matrícula Estudiantil por Centro Académico &#8599;
+          Consultar Tabla de Matrícula estudiantil por Centro Académico y por Carrera &#8599;
         </button>
       </div>
     </section>
@@ -1936,26 +1936,33 @@
   <div class="glass-modal-overlay" id="modalCentros">
     <div class="glass-modal">
       <div class="modal-header">
-        <h2 class="modal-title">Población por Centro Académico</h2>
+        <h2 class="modal-title">Tabla de Matrícula estudiantil por Centro Académico y por Carrera</h2>
         <button id="close-modal-centros" class="close-btn" type="button" aria-label="Cerrar">&times;</button>
       </div>
-      <div class="modal-body">
-        <table class="glass-table">
-          <thead>
-            <tr>
-              <th>NIVEL Y CENTRO ACADÉMICO</th>
-              <th class="text-right">TOTAL</th>
-              <th class="text-right col-gender">Mas.</th>
-              <th class="text-right col-gender">Fem.</th>
-              <th class="text-right col-gender">X</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- La tabla inicia vacía; JavaScript inyectará las filas aquí -->
-          </tbody>
-        </table>
+      <div class="matricula-modal-layout">
+        <div class="modal-body matricula-table-scroll">
+          <table class="glass-table">
+            <thead>
+              <tr>
+                <th>NIVEL, CENTRO ACADÉMICO Y CARRERA</th>
+                <th class="text-right">TOTAL</th>
+                <th class="text-right col-gender">Mas.</th>
+                <th class="text-right col-gender">Fem.</th>
+                <th class="text-right col-gender">X</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- La tabla inicia vacía; JavaScript inyectará las filas aquí -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
+    <img
+      src="assets/img/indicacion-desplegar-carreras.png"
+      alt="Da clic sobre el centro para desplegar el detalle por carrera"
+      class="matricula-modal-hint"
+    >
   </div>
 
   <!-- AQUI SE MUEVE EL BLOQUE HTML DEL MENÚ FLOTANTE, ARRIBA DEL SCRIPT -->

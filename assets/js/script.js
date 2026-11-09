@@ -851,7 +851,7 @@ fetchSheetData('01_Matricula', true).then(data => {
     let centroActual = '';
     let grupoCentro = -1;
     let subtotalCentro = { mas: 0, fem: 0, x: 0, total: 0 };
-    matriculaPorCarrera.forEach(c => {
+    matriculaPorCarrera.forEach((c, idx) => {
         if (c.nivelOriginal !== nivelActual) {
         nivelActual = c.nivelOriginal;
         centroActual = '';
@@ -866,7 +866,9 @@ fetchSheetData('01_Matricula', true).then(data => {
         subtotalCentro = centro.reduce((s, item) => ({ mas: s.mas + item.mas, fem: s.fem + item.fem, x: s.x + item.x, total: s.total + item.filaTotal }), subtotalCentro);
         htmlTabla += `<tr class="row-center" data-center-group="${grupoCentro}" tabindex="0" role="button" aria-expanded="false" aria-label="Desglosar carreras de ${escapeHTML(c.centro)}"><td><span class="center-cell"><span class="center-toggle" aria-hidden="true"></span><span class="center-icon" aria-hidden="true"></span><span class="center-name">${escapeHTML(c.centro)}</span></span></td><td class="text-right">${subtotalCentro.total.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.x.toLocaleString('es-MX')}</td></tr>`;
         }
-        htmlTabla += `<tr class="row-career is-collapsed" data-center-detail="${grupoCentro}"><td>${escapeHTML(c.carrera || 'NA')}</td><td class="text-right">${c.filaTotal.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.x.toLocaleString('es-MX')}</td></tr>`;
+        const nextItem = matriculaPorCarrera[idx + 1];
+        const isLastCareer = !nextItem || nextItem.nivelOriginal !== c.nivelOriginal || nextItem.centro !== c.centro;
+        htmlTabla += `<tr class="row-career is-collapsed${isLastCareer ? ' is-last-career' : ''}" data-center-detail="${grupoCentro}"><td><span class="career-cell"><span class="career-icon" aria-hidden="true"></span><span class="career-name">${escapeHTML(c.carrera || 'NA')}</span></span></td><td class="text-right">${c.filaTotal.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.x.toLocaleString('es-MX')}</td></tr>`;
     });
     
     const tbody = document.querySelector('.glass-table tbody');
@@ -2015,6 +2017,7 @@ fetchSheetData('12_Directorio').then(data => {
     
     // Diccionario para almacenar el HTML acumulado por categoría
     let listasHTML = {
+        campus: '',
         bibliotecas: '',
         auditorios: '',
         deportivos: '',
@@ -2047,7 +2050,8 @@ fetchSheetData('12_Directorio').then(data => {
         let itemHTML = `<li class="directory-item"><svg class="directory-icon"><use href="#dir-icon"></use></svg><a href="${enlace}" target="_blank" class="directory-link">${nombre}</a></li>`;
 
         // Lo agrupamos en la lista que le corresponde
-        if (catLower.includes('bibliotecas')) listasHTML.bibliotecas += itemHTML;
+        if (catLower.includes('campus')) listasHTML.campus += itemHTML;
+        else if (catLower.includes('bibliotecas')) listasHTML.bibliotecas += itemHTML;
         else if (catLower.includes('auditorios')) listasHTML.auditorios += itemHTML;
         else if (catLower.includes('deportivos')) listasHTML.deportivos += itemHTML;
         else if (catLower.includes('esparcimiento')) listasHTML.esparcimiento += itemHTML;
@@ -2067,6 +2071,7 @@ fetchSheetData('12_Directorio').then(data => {
     if (textosInterfase['INTRODUCCIÓN']) setSafeHTML(document.getElementById('b12-lead'), textosInterfase['INTRODUCCIÓN'].h);
 
     // 2. Inyección de las listas armadas
+    if (document.getElementById('b12-list-campus')) setSafeHTML(document.getElementById('b12-list-campus'), listasHTML.campus);
     if (document.getElementById('b12-list-bibliotecas')) setSafeHTML(document.getElementById('b12-list-bibliotecas'), listasHTML.bibliotecas);
     if (document.getElementById('b12-list-auditorios')) setSafeHTML(document.getElementById('b12-list-auditorios'), listasHTML.auditorios);
     if (document.getElementById('b12-list-deportivos')) setSafeHTML(document.getElementById('b12-list-deportivos'), listasHTML.deportivos);

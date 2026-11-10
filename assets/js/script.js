@@ -1419,10 +1419,11 @@ fetchSheetData('06_Personal_Academico').then(data => {
     
     let textosInterfase = {};
     let contratacion = [];
-    let sniiGen = { mujeres: 0, hombres: 0 };
+    let sniiGen = { mujeres: 0, hombres: 0, noBinario: 0 };
     let sniiNivel = [];
-    let prodepGen = { mujeres: 0, hombres: 0 };
+    let prodepGen = { mujeres: 0, hombres: 0, noBinario: 0 };
     let cuerpos = {};
+    let sniiPorCentro = {};
 
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
@@ -1441,14 +1442,25 @@ fetchSheetData('06_Personal_Academico').then(data => {
 
         if (cat && cat !== 'Categoría') {
         if (cat === 'Tipo de Contratación') contratacion.push({ nombre: ind, valor: val });
+        else if (cat === 'SNII por Centro') {
+            const centro = ind;
+            const departamento = (row[2] || '').trim();
+            const investigadores = cleanNum(row[3]);
+            if (centro && departamento) {
+                if (!sniiPorCentro[centro]) sniiPorCentro[centro] = [];
+                sniiPorCentro[centro].push({ nombre: departamento, valor: investigadores });
+            }
+        }
         else if (cat === 'Investigadores (SNII) - Género') {
             if (ind.toLowerCase() === 'mujeres') sniiGen.mujeres = val;
             if (ind.toLowerCase() === 'hombres') sniiGen.hombres = val;
+            if (ind.toLowerCase() === 'no binario') sniiGen.noBinario = val;
         }
         else if (cat === 'Investigadores (SNII) - Nivel') sniiNivel.push({ nombre: ind, valor: val });
         else if (cat === 'Perfil PRODEP') {
             if (ind.toLowerCase() === 'mujeres') prodepGen.mujeres = val;
             if (ind.toLowerCase() === 'hombres') prodepGen.hombres = val;
+            if (ind.toLowerCase() === 'no binario') prodepGen.noBinario = val;
         }
         else if (cat === 'Cuerpos Académicos') cuerpos[ind] = val;
         }
@@ -1502,7 +1514,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
     
     let totalSnii = sniiNivel.reduce((sum, item) => sum + item.valor, 0);
     document.getElementById('b6-snii-total').setAttribute('data-target', totalSnii);
-    setSafeHTML(document.getElementById('b6-snii-texto'), `Profesores con distinción SNII (<strong>${sniiGen.mujeres} mujeres</strong> y <strong>${sniiGen.hombres} hombres</strong>).`);
+    setSafeHTML(document.getElementById('b6-snii-texto'), `Profesores con distinción SNII (<strong>${sniiGen.mujeres} mujeres</strong>, <strong>${sniiGen.hombres} hombres</strong> y <strong>${sniiGen.noBinario} personas no binarias</strong>).`);
 
     let htmlSnii = '';
     sniiNivel.forEach(n => {
@@ -1518,9 +1530,161 @@ fetchSheetData('06_Personal_Academico').then(data => {
     if (textosInterfase['TARJETA 4 PRIMERA LÍNEA']) document.getElementById('b6-t4-tag').innerText = textosInterfase['TARJETA 4 PRIMERA LÍNEA'].h;
     if (textosInterfase['TARJETA 4 SECUNDARIA']) document.getElementById('b6-t4-sec').innerText = textosInterfase['TARJETA 4 SECUNDARIA'].h;
 
-    let totalProdep = prodepGen.mujeres + prodepGen.hombres;
+    let totalProdep = prodepGen.mujeres + prodepGen.hombres + prodepGen.noBinario;
     document.getElementById('b6-prodep-total').setAttribute('data-target', totalProdep);
-    setSafeHTML(document.getElementById('b6-prodep-texto'), `Fortalecimiento de las funciones sustantivas de la institución, integrado por <strong>${prodepGen.mujeres} mujeres</strong> y <strong>${prodepGen.hombres} hombres</strong> con reconocimiento vigente.`);
+    setSafeHTML(document.getElementById('b6-prodep-texto'), `Fortalecimiento de las funciones sustantivas de la institución, integrado por <strong>${prodepGen.mujeres} mujeres</strong>, <strong>${prodepGen.hombres} hombres</strong> y <strong>${prodepGen.noBinario || 0} personas no binarias</strong> con reconocimiento vigente.`);
+
+    // 5. Gráfico interactivo de investigadores SNII por centro o departamento
+    const centroContainer = document.getElementById('b6-snii-distribucion');
+    const centroTitulo = document.getElementById('b6-snii-distribucion-subtitulo');
+    const centroResumen = document.getElementById('b6-snii-distribucion-resumen');
+    const centroBotones = document.querySelectorAll('[data-snii-group]');
+    const listaCentros = Object.entries(sniiPorCentro);
+    const registrosSnii = listaCentros.flatMap(([centro, departamentos]) =>
+        departamentos.map(d => ({ centro, departamento: d.nombre, valor: d.valor }))
+    );
+    const totalInvestigadoresPorCentro = listaCentros.reduce((total, [, departamentos]) =>
+        total + departamentos.reduce((subtotal, d) => subtotal + d.valor, 0), 0
+    );
+
+    function iconoCentro(nombre) {
+        const texto = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        let dibujo = '<path d="M4 20h16M6 20V8l6-4 6 4v12M9 10h1m4 0h1m-6 4h1m4 0h1m-5 6v-4h2v4"/>';
+        if (texto.includes('basica')) dibujo = '<path d="M9 3h6m-5 0v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8M10 18h.01M14 17h.01"/>';
+        else if (texto.includes('social') || texto.includes('humanidad')) dibujo = '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1"/>';
+        else if (texto.includes('econom') || texto.includes('administr')) dibujo = '<path d="M4 20h16M6 16h3v4H6zm5-7h3v11h-3zm5-5h3v16h-3z"/>';
+        else if (texto.includes('diseno') || texto.includes('construccion')) dibujo = '<path d="M3 3v18h18L3 3Z"/><path d="M7 11v6h6l-6-6Z"/><path d="M3 7h2M3 11h1.5M3 15h2M7 21v-2M11 21v-1.5M15 21v-2"/>';
+        else if (texto.includes('agropecuaria')) dibujo = '<path d="M20 4C11 4 5 7 5 14a6 6 0 0 0 6 6c7 0 9-7 9-16ZM4 21l9-9m-3 3-1-4m4 1 4 1"/>';
+        else if (texto.includes('salud')) dibujo = '<path d="M7 2H5a1 1 0 0 0-1 1v5a5 5 0 0 0 10 0V3a1 1 0 0 0-1-1h-2M7 1.5v2M11 1.5v2M9 13v3.5a4.5 4.5 0 0 0 9 0v-3"/><circle cx="18" cy="11" r="2.5"/><circle cx="18" cy="11" r="0.6" fill="currentColor"/>';
+        else if (texto.includes('ingenier')) dibujo = '<path d="m12 3 2 2.1 3-.2.9 2.8 2.7 1.4-.7 2.9.7 2.9-2.7 1.4-.9 2.8-3-.2L12 21l-2-2.1-3 .2-.9-2.8-2.7-1.4.7-2.9-.7-2.9 2.7-1.4.9-2.8 3 .2L12 3Z"/><circle cx="12" cy="12" r="3"/>';
+        else if (texto.includes('empresarial')) dibujo = '<path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 21V10a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v11M8 8h1M11 8h1M8 11.5h1M11 11.5h1M8 15h1M11 15h1M17.2 13h.8M17.2 16.5h.8M9 21v-3h2v3"/>';
+        else if (texto.includes('educacion')) dibujo = '<path d="m2 9 10-5 10 5-10 5L2 9Zm4 3v5c4 3 8 3 12 0v-5m4-3v7"/>';
+        else if (texto.includes('artes') || texto.includes('cultura')) dibujo = '<path d="M3 5.5c3.2-1.2 6.2-.5 9 1.1v7.1c0 3.1-1.8 5.6-5 7.3-2.7-1.7-4-4-4-7V5.5Z"/><path d="M12 7.2c2.8-1.8 5.8-2.5 9-1.7V14c0 3-1.3 5.3-4 7-2.6-1.4-4.2-3.3-4.8-5.7"/><ellipse cx="7" cy="11" rx="1" ry="1.3"/><ellipse cx="11" cy="11" rx="1" ry="1.3"/><path d="M6.5 15c1.5 1.2 3 1.2 4.5 0m3.2-3.8c.6-.8 1.5-.8 2.1 0m2.3 0c.6-.8 1.5-.8 2.1 0m-5.2 4.6c1.5-1.2 3-1.2 4.5 0"/>';
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${dibujo}</svg>`;
+    }
+
+    function renderDistribucionSnii(agrupacion) {
+        if (!centroContainer) return;
+        const etiquetaTitulo = agrupacion === 'departamento'
+            ? 'Agrupación por departamento'
+            : 'Agrupación por centro y departamento';
+
+        if (centroTitulo) centroTitulo.textContent = etiquetaTitulo;
+        centroBotones.forEach(boton => {
+            const activo = boton.dataset.sniiGroup === agrupacion;
+            boton.classList.toggle('is-active', activo);
+            boton.setAttribute('aria-pressed', String(activo));
+        });
+
+        if (!registrosSnii.length) {
+            setSafeHTML(centroContainer, '<p class="metric-subtext">No hay datos de distribución disponibles.</p>');
+            return;
+        }
+
+        const generarFila = (etiqueta, valor, barPct, porcentajeTotal, etiquetaVisual, clase = '') => `
+            <div class="snii-chart-row ${clase}">
+                <div class="snii-chart-labels">${etiquetaVisual}</div>
+                <div class="snii-chart-track" role="img" aria-label="${escapeHTML(etiqueta)}: ${valor.toLocaleString('es-MX')} investigadores">
+                    <div class="snii-chart-bar" style="width:${barPct.toFixed(2)}%"></div>
+                </div>
+                <div class="snii-chart-metrics"><span class="snii-chart-value">${valor.toLocaleString('es-MX')}</span><span class="snii-chart-percent">${porcentajeTotal.toFixed(1)}%</span></div>
+            </div>`;
+
+        let html = '';
+        if (agrupacion === 'centro-departamento') {
+            const centros = Object.entries(sniiPorCentro).map(([centro, departamentos]) => ({
+                nombre: centro,
+                departamentos: [...departamentos].sort((a, b) => b.valor - a.valor || a.nombre.localeCompare(b.nombre, 'es')),
+                total: departamentos.reduce((sum, departamento) => sum + departamento.valor, 0)
+            })).sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre, 'es'));
+            const maxCentro = Math.max(...centros.map(centro => centro.total), 0);
+            const totalDepartamentos = Object.values(sniiPorCentro).reduce((sum, departamentos) => sum + departamentos.length, 0);
+            if (centroResumen) centroResumen.textContent = `${totalInvestigadoresPorCentro.toLocaleString('es-MX')} investigadores en ${centros.length.toLocaleString('es-MX')} centros y ${totalDepartamentos.toLocaleString('es-MX')} departamentos`;
+
+            html = centros.map(centro => {
+                const etiquetaCentro = `<div class="snii-chart-center-trigger" role="button" tabindex="0" aria-expanded="false" data-center-toggle="${escapeHTML(centro.nombre)}"><span class="center-toggle" aria-hidden="true"></span><span class="snii-center-icon">${iconoCentro(centro.nombre)}</span><span class="snii-chart-label">${escapeHTML(centro.nombre)}</span></div>`;
+                const filaCentro = generarFila(centro.nombre, centro.total, maxCentro > 0 ? centro.total / maxCentro * 100 : 0,
+                    totalInvestigadoresPorCentro > 0 ? centro.total / totalInvestigadoresPorCentro * 100 : 0,
+                    etiquetaCentro, 'snii-chart-parent-row');
+                const filasDepartamentos = centro.departamentos.map(departamento => `
+                    <div class="snii-chart-department-row">
+                        <span class="snii-department-name"><span class="snii-chart-label">${escapeHTML(departamento.nombre)}</span></span>
+                        <span class="snii-department-count">${departamento.valor.toLocaleString('es-MX')}</span>
+                    </div>`).join('');
+                const numDeptos = centro.departamentos.length;
+                const txtInvestigadores = centro.total === 1 ? 'investigador' : 'investigadores';
+                const txtDepartamentos = numDeptos === 1 ? 'departamento' : 'departamentos';
+                const tarjetaResumen = `
+                    <div class="snii-center-summary-card" aria-label="Resumen de ${escapeHTML(centro.nombre)}">
+                        <div class="snii-summary-icon">${iconoCentro(centro.nombre)}</div>
+                        <div class="snii-summary-block">
+                            <span class="snii-summary-label">Total del centro</span>
+                            <strong class="snii-summary-total">${centro.total.toLocaleString('es-MX')}</strong>
+                            <span class="snii-summary-sub">${txtInvestigadores}</span>
+                        </div>
+                        <div class="snii-summary-divider" aria-hidden="true"></div>
+                        <div class="snii-summary-block">
+                            <strong class="snii-summary-deptos">${numDeptos.toLocaleString('es-MX')}</strong>
+                            <span class="snii-summary-sub">${txtDepartamentos}</span>
+                        </div>
+                    </div>`;
+                return `<div class="snii-chart-center-group">${filaCentro}<div class="snii-chart-departments is-collapsed"><div class="snii-departments-list">${filasDepartamentos}</div>${tarjetaResumen}</div></div>`;
+            }).join('');
+        } else {
+            const grupos = new Map();
+            registrosSnii.forEach(registro => {
+                const etiqueta = registro.departamento;
+                const actual = grupos.get(etiqueta) || { valor: 0, centros: new Set() };
+                actual.valor += registro.valor;
+                if (registro.centro) actual.centros.add(registro.centro);
+                grupos.set(etiqueta, actual);
+            });
+            const datos = [...grupos.entries()].sort((a, b) => b[1].valor - a[1].valor || a[0].localeCompare(b[0], 'es'));
+            const valorMaximo = Math.max(...datos.map(([, info]) => info.valor), 0);
+            if (centroResumen) centroResumen.textContent = `${totalInvestigadoresPorCentro.toLocaleString('es-MX')} investigadores en ${datos.length.toLocaleString('es-MX')} departamentos`;
+
+            html = datos.map(([etiqueta, info]) => {
+                const { valor, centros } = info;
+                const listaCentrosDepto = [...centros];
+                const centroPrincipal = listaCentrosDepto[0] || '';
+                const textoCentro = listaCentrosDepto.join(' • ');
+                const porcentajeTotal = totalInvestigadoresPorCentro > 0 ? (valor / totalInvestigadoresPorCentro) * 100 : 0;
+                const tooltipCentro = textoCentro
+                    ? `<span class="snii-dept-center-tooltip" role="tooltip"><span class="snii-tooltip-icon">${iconoCentro(centroPrincipal)}</span><span class="snii-tooltip-text"><span class="snii-tooltip-prefix">Centro:</span> ${escapeHTML(textoCentro)}</span></span>`
+                    : '';
+                const etiquetaVisual = `<span class="snii-department-name"><span class="snii-department-dot" aria-hidden="true"></span><span class="snii-chart-label">${escapeHTML(etiqueta)}</span></span>${tooltipCentro}`;
+                return generarFila(etiqueta, valor, valorMaximo > 0 ? valor / valorMaximo * 100 : 0,
+                    porcentajeTotal, etiquetaVisual, 'snii-dept-flat-row');
+            }).join('');
+        }
+
+        setSafeHTML(centroContainer, html);
+        centroContainer.querySelectorAll('[data-center-toggle]').forEach(disparador => {
+            const filaPadre = disparador.closest('.snii-chart-parent-row');
+            const alternar = () => {
+                const grupo = disparador.closest('.snii-chart-center-group');
+                const departamentos = grupo?.querySelector('.snii-chart-departments');
+                if (!departamentos) return;
+                const expandido = departamentos.classList.toggle('is-expanded');
+                departamentos.classList.toggle('is-collapsed', !expandido);
+                grupo.classList.toggle('is-expanded', expandido);
+                disparador.classList.toggle('is-expanded', expandido);
+                disparador.setAttribute('aria-expanded', String(expandido));
+            };
+            (filaPadre || disparador).addEventListener('click', alternar);
+            disparador.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    alternar();
+                }
+            });
+        });
+    }
+
+    centroBotones.forEach(boton => boton.addEventListener('click', () => {
+        renderDistribucionSnii(boton.dataset.sniiGroup);
+    }));
+    renderDistribucionSnii('centro-departamento');
 
     // 6. Tarjeta 5: Cuerpos Académicos
     if (textosInterfase['TARJETA 5 PRIMERA LÍNEA']) document.getElementById('b6-t5-tag').innerText = textosInterfase['TARJETA 5 PRIMERA LÍNEA'].h;

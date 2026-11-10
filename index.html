@@ -660,6 +660,7 @@
           style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
           <!-- Inyectado por JS -->
         </div>
+        <p class="metric-subtext" style="margin: 18px 0 0;"><em>Nota: No se considera al personal contratado por honorarios.</em></p>
       </article>
 
       <article class="card card-7 reveal">
@@ -699,6 +700,23 @@
         <div
           style="background: rgba(22, 48, 114, 0.03); padding: 16px; border-radius: 16px; border: 1px solid rgba(22, 48, 114, 0.06);">
           <p class="metric-subtext" id="b6-prodep-texto" style="margin: 0;">...</p>
+        </div>
+      </article>
+
+      <article class="card card-12 reveal" id="b6-snii-distribucion-card">
+        <div class="flex-row-between" style="flex-wrap:wrap; align-items:center; margin-bottom:24px;">
+          <div>
+            <div class="card-section-tag">Distribución de investigadores SNII</div>
+            <h3 class="card-title xl" id="b6-snii-distribucion-subtitulo">Agrupación por centro y departamento</h3>
+          </div>
+          <div class="snii-group-toggle" role="group" aria-label="Agrupar investigadores SNII">
+            <button type="button" class="snii-group-button is-active" data-snii-group="centro-departamento" aria-pressed="true">Por centro y departamento</button>
+            <button type="button" class="snii-group-button" data-snii-group="departamento" aria-pressed="false">Por departamento</button>
+          </div>
+        </div>
+        <div id="b6-snii-distribucion-resumen" class="metric-subtext" aria-live="polite" style="margin-bottom:18px;"></div>
+        <div id="b6-snii-distribucion" class="snii-chart" aria-live="polite">
+          <!-- Inyectado por JS -->
         </div>
       </article>
 

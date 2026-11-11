@@ -341,22 +341,68 @@ interactiveCards.forEach(card => {
     });
 });
 
-// 5. Control de Modal
+// 5. Control de Modal y bloqueo de desplazamiento del fondo
+function syncModalScrollLock() {
+    const algunModalAbierto = document.querySelector('.glass-modal-overlay.open') !== null;
+    document.body.classList.toggle('modal-open', algunModalAbierto);
+}
+
 const modalCentros = document.getElementById('modalCentros');
 const botonAbrirModalCentros = document.getElementById('open-modal-centros');
 const botonCerrarModalCentros = document.getElementById('close-modal-centros');
 
 if (modalCentros) {
     if (botonAbrirModalCentros) {
-        botonAbrirModalCentros.addEventListener('click', () => modalCentros.classList.add('open'));
+        botonAbrirModalCentros.addEventListener('click', () => {
+            modalCentros.classList.add('open');
+            syncModalScrollLock();
+        });
     }
     if (botonCerrarModalCentros) {
-        botonCerrarModalCentros.addEventListener('click', () => modalCentros.classList.remove('open'));
+        botonCerrarModalCentros.addEventListener('click', () => {
+            modalCentros.classList.remove('open');
+            syncModalScrollLock();
+        });
     }
     modalCentros.addEventListener('click', function(e) {
-        if (e.target === this) this.classList.remove('open');
+        if (e.target === this) {
+            this.classList.remove('open');
+            syncModalScrollLock();
+        }
     });
 }
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const abiertos = document.querySelectorAll('.glass-modal-overlay.open');
+        if (abiertos.length > 0) {
+            abiertos.forEach(m => m.classList.remove('open'));
+            syncModalScrollLock();
+        }
+    }
+});
+
+// Evitar que al llegar al tope o final de contenedores internos con scroll
+// (como Investigadores SNII, Directorio o Tablas) el impulso desplace la página de fondo
+document.addEventListener('wheel', (e) => {
+    const scrollEl = e.target.closest('.snii-chart, .directory-list.scrollable, .modal-body');
+    if (!scrollEl) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = scrollEl;
+    const tieneScrollVertical = scrollHeight > clientHeight;
+
+    if (!tieneScrollVertical) {
+        if (scrollEl.classList.contains('modal-body')) e.preventDefault();
+        return;
+    }
+
+    const subiendoEnTope = e.deltaY < 0 && scrollTop <= 0;
+    const bajandoEnFinal = e.deltaY > 0 && Math.ceil(scrollTop + clientHeight) >= scrollHeight;
+
+    if (subiendoEnTope || bajandoEnFinal) {
+        e.preventDefault();
+    }
+}, { passive: false });
 
 // 6. Lógica del Pictograma Líquido
 const genderData = {
@@ -996,6 +1042,7 @@ fetchSheetData('03_Acreditaciones').then(data => {
     
     let textosInterfase = {};
     let filasAcreditaciones = [];
+    let carrerasEgel = [];
 
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
@@ -1003,19 +1050,105 @@ fetchSheetData('03_Acreditaciones').then(data => {
 
         const keyTexto = (row[6] || '').trim();
         if (keyTexto) {
-        const textoCompleto = row.slice(7).filter(t => t && t.trim() !== '').join(' ');
-        textosInterfase[keyTexto] = textoCompleto;
+            // Limitar de la columna H (7) a la M (12) para no mezclar la tabla EGEL (N:T)
+            const textoCompleto = row.slice(7, 13).filter(t => t && t.trim() !== '').join(' ');
+            textosInterfase[keyTexto] = textoCompleto;
         }
 
         const nivel = (row[0] || '').trim();
-        if (nivel && nivel !== 'Nivel Académico') {
-        filasAcreditaciones.push({
-            nivel,
-            tipo: (row[1] || '').trim(),
-            total: cleanNum(row[2]),
-            ofertables: cleanNum(row[3]),
-            acreditados: cleanNum(row[4])
-        });
+        if (nivel && !/^Nivel\s+Acad/i.test(nivel)) {
+            if (/^Nivel\s+Acad[eé]mico\s+/i.test(nivel)) {
+                const nivelLimpio = nivel.replace(/^Nivel\s+Acad[eé]mico\s+/i, '').trim();
+                const tipoLimpio = (row[1] || '').replace(/^Tipo\s+de\s+Reconocimiento\s+/i, '').trim();
+                const ultNum = (v) => {
+                    const m = String(v || '').match(/\d+/g);
+                    return m ? parseInt(m[m.length - 1], 10) : 0;
+                };
+                if (nivelLimpio) {
+                    filasAcreditaciones.push({
+                        nivel: nivelLimpio,
+                        tipo: tipoLimpio,
+                        total: ultNum(row[2]),
+                        ofertables: ultNum(row[3]),
+                        acreditados: ultNum(row[4])
+                    });
+                }
+            } else {
+                filasAcreditaciones.push({
+                    nivel,
+                    tipo: (row[1] || '').trim(),
+                    total: cleanNum(row[2]),
+                    ofertables: cleanNum(row[3]),
+                    acreditados: cleanNum(row[4])
+                });
+            }
+        } else if (/^Nivel\s+Acad[eé]mico\s+\S+/i.test(nivel)) {
+            const nivelLimpio = nivel.replace(/^Nivel\s+Acad[eé]mico\s+/i, '').trim();
+            const tipoLimpio = (row[1] || '').replace(/^Tipo\s+de\s+Reconocimiento\s+/i, '').trim();
+            const ultNum = (v) => {
+                const m = String(v || '').match(/\d+/g);
+                return m ? parseInt(m[m.length - 1], 10) : 0;
+            };
+            filasAcreditaciones.push({
+                nivel: nivelLimpio,
+                tipo: tipoLimpio,
+                total: ultNum(row[2]),
+                ofertables: ultNum(row[3]),
+                acreditados: ultNum(row[4])
+            });
+        }
+
+        // Tabla Padrón EGEL en columnas N:T (índices 13 a 19)
+        // Nota: Si gviz/tq une encabezados (filas 1-2) en la primera fila del CSV,
+        // en i === 0 debemos verificar que realmente contenga datos antes de extraer.
+        let rawNivel = (row[13] || '').trim();
+        let rawEgelPlus = (row[14] || '').trim();
+        let rawPe = (row[15] || '').trim();
+        let rawCampus = (row[16] || '').trim();
+        let rawTotal = (row[17] || '').trim();
+        let rawNdgs = (row[18] || '').trim();
+        let rawNdgss = (row[19] || '').trim();
+
+        // Limpiar prefijos de encabezado en caso de que gviz haya fusionado filas 1-2 con fila 3
+        let nivelEgel = rawNivel.replace(/^Nivel\s*/i, '').trim();
+        let egelPlus = rawEgelPlus.replace(/^EGEL\s*Plus\s*/i, '').trim();
+        let peEgel = rawPe.replace(/^PE\s*/i, '').trim();
+        let campusEgel = rawCampus.replace(/^Campus\s*/i, '').trim();
+
+        const extraerUltimoDecimal = (str) => {
+            const matches = String(str).match(/\d+(?:[.,]\d+)?/g);
+            return matches ? matches[matches.length - 1].replace(',', '.') : '';
+        };
+        let totalPct = extraerUltimoDecimal(rawTotal);
+        let ndgsPct = extraerUltimoDecimal(rawNdgs);
+        let ndgssPct = extraerUltimoDecimal(rawNdgss);
+
+        if (
+            nivelEgel &&
+            peEgel &&
+            /^[ABC]$/i.test(nivelEgel) &&
+            peEgel.toUpperCase() !== 'PE'
+        ) {
+            carrerasEgel.push({
+                nivel: nivelEgel.toUpperCase(),
+                egelPlus,
+                pe: peEgel,
+                campus: campusEgel,
+                totalPct,
+                ndgsPct,
+                ndgssPct
+            });
+        }
+    }
+
+    // Reconstruir textos en caso de que gviz haya fusionado la fila 1 ("PRIMERA LÍNEA") con la fila 2 ("LÍNEA PRINCIPAL") en el CSV
+    if (!textosInterfase['PRIMERA LÍNEA']) {
+        const keyFusionada = Object.keys(textosInterfase).find(k => k.includes('PRIMERA LÍNEA') && k.includes('LÍNEA PRINCIPAL'));
+        if (keyFusionada && data[0]) {
+            const valG = (data[0][6] || '').trim();
+            const valH = (data[0][7] || '').trim();
+            textosInterfase['PRIMERA LÍNEA'] = 'CALIDAD Y RECONOCIMIENTO';
+            textosInterfase['LÍNEA PRINCIPAL'] = valH.replace(/^CALIDAD Y RECONOCIMIENTO\s*/i, '').trim() || 'Excelencia y Acreditaciones Académicas';
         }
     }
 
@@ -1099,6 +1232,119 @@ fetchSheetData('03_Acreditaciones').then(data => {
     if (textosInterfase['TARJETA 5 PRINCIPAL']) document.querySelector('.t5-title').innerText = textosInterfase['TARJETA 5 PRINCIPAL'];
     if (textosInterfase['TARJETA 5 SECUNDARIA']) document.querySelector('.t5-sub').innerText = textosInterfase['TARJETA 5 SECUNDARIA'];
     if (textosInterfase['TARJETA 5 COMENTARIO']) setSafeHTML(document.querySelector('.t5-desc'), textosInterfase['TARJETA 5 COMENTARIO']);
+
+    // 7. Modal Padrón EGEL (Tabla N1:T28)
+    const modalEgel = document.getElementById('modalEgel');
+    const cardPadronEgel = document.getElementById('card-padron-egel');
+    const closeModalEgel = document.getElementById('close-modal-egel');
+    const egelTableBody = document.getElementById('egel-table-body');
+    const egelFilterButtons = document.getElementById('egel-filter-buttons');
+
+    if (modalEgel && cardPadronEgel) {
+        const abrirModalEgel = () => {
+            modalEgel.classList.add('open');
+            syncModalScrollLock();
+        };
+        const cerrarModalEgel = () => {
+            modalEgel.classList.remove('open');
+            syncModalScrollLock();
+        };
+
+        cardPadronEgel.addEventListener('click', abrirModalEgel);
+        cardPadronEgel.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                abrirModalEgel();
+            }
+        });
+        if (closeModalEgel) closeModalEgel.addEventListener('click', cerrarModalEgel);
+        modalEgel.addEventListener('click', function(e) {
+            if (e.target === this) cerrarModalEgel();
+        });
+    }
+
+    if (egelTableBody && carrerasEgel.length > 0) {
+        const formatearPct = (val) => {
+            if (!val) return '-';
+            const limpio = String(val).replace('%', '').trim();
+            const num = parseFloat(limpio);
+            return isNaN(num) ? `${escapeHTML(limpio)}%` : `${num.toFixed(1)}%`;
+        };
+
+        const colorNivel = (niv) => {
+            const n = String(niv).toUpperCase();
+            if (n === 'A') return 'background: rgba(0, 168, 143, 0.15); color: #007A68; border: 1px solid rgba(0, 168, 143, 0.35);';
+            if (n === 'B') return 'background: rgba(21, 96, 130, 0.14); color: var(--uaa-teal); border: 1px solid rgba(21, 96, 130, 0.3);';
+            return 'background: rgba(249, 177, 34, 0.22); color: var(--uaa-navy); border: 1px solid rgba(249, 177, 34, 0.45);';
+        };
+
+        const renderizarTablaEgel = (filtroNivel = 'TODOS') => {
+            const filtradas = filtroNivel === 'TODOS'
+                ? carrerasEgel
+                : carrerasEgel.filter(c => c.nivel.toUpperCase() === filtroNivel);
+
+            const filasHtml = filtradas.map(c => `
+                <tr>
+                    <td style="text-align: center;">
+                        <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 26px; padding: 0 8px; border-radius: 8px; font-weight: 800; font-size: 13px; ${colorNivel(c.nivel)}">${escapeHTML(c.nivel)}</span>
+                    </td>
+                    <td style="width: auto; white-space: normal;">
+                        <span style="display: inline-flex; align-items: center; gap: 12px;">
+                            <span class="career-icon" aria-hidden="true"></span>
+                            <span class="career-name" style="font-weight: 600; color: var(--uaa-navy);">${escapeHTML(c.pe)}</span>
+                        </span>
+                    </td>
+                    <td style="color: var(--text-secondary); font-weight: 500;">${escapeHTML(c.campus)}</td>
+                    <td class="text-right" style="font-weight: 800; color: var(--uaa-navy);">${formatearPct(c.totalPct)}</td>
+                    <td class="text-right col-gender">${formatearPct(c.ndgsPct)}</td>
+                    <td class="text-right col-gender" style="padding-right: clamp(22px, 3vw, 34px);">${formatearPct(c.ndgssPct)}</td>
+                </tr>
+            `).join('');
+
+            setSafeHTML(egelTableBody, filasHtml);
+        };
+
+        if (egelFilterButtons) {
+            const conteos = carrerasEgel.reduce((acc, c) => {
+                const k = c.nivel.toUpperCase();
+                acc[k] = (acc[k] || 0) + 1;
+                return acc;
+            }, {});
+            const nivelesUnicos = Object.keys(conteos).sort();
+
+            const btnBaseStyle = 'padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; border: 1px solid rgba(22, 48, 114, 0.15);';
+            const htmlBotones = [
+                `<span class="egel-filter-pill is-active" data-nivel="TODOS" role="button" tabindex="0" style="${btnBaseStyle} background: var(--uaa-navy); color: #fff;">Todos (${carrerasEgel.length})</span>`,
+                ...nivelesUnicos.map(niv => `<span class="egel-filter-pill" data-nivel="${escapeHTML(niv)}" role="button" tabindex="0" style="${btnBaseStyle} background: rgba(255,255,255,0.8); color: var(--uaa-navy);">Nivel ${escapeHTML(niv)} (${conteos[niv]})</span>`)
+            ].join('');
+
+            setSafeHTML(egelFilterButtons, htmlBotones);
+
+            const pills = egelFilterButtons.querySelectorAll('.egel-filter-pill');
+            const activarFiltro = (pillSeleccionado) => {
+                const niv = pillSeleccionado.getAttribute('data-nivel') || 'TODOS';
+                pills.forEach(p => {
+                    const activo = p === pillSeleccionado;
+                    p.classList.toggle('is-active', activo);
+                    p.style.background = activo ? 'var(--uaa-navy)' : 'rgba(255,255,255,0.8)';
+                    p.style.color = activo ? '#fff' : 'var(--uaa-navy)';
+                });
+                renderizarTablaEgel(niv);
+            };
+
+            pills.forEach(pill => {
+                pill.addEventListener('click', () => activarFiltro(pill));
+                pill.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        activarFiltro(pill);
+                    }
+                });
+            });
+        }
+
+        renderizarTablaEgel('TODOS');
+    }
 
     })
     .catch(error => {
@@ -1203,6 +1449,18 @@ fetchSheetData('04_Becas').then(data => {
 
     setSafeHTML(historyChart, htmlBars);
     setSafeHTML(historyXaxis, htmlXAxis);
+
+    // 5. Nota al pie del Bloque 04 (celda G9="NOTA", H9=texto)
+    const b4Footnote = document.getElementById('b4-footnote');
+    const textoNotaB4 = textosInterfase['NOTA']?.h || '';
+    if (b4Footnote && textoNotaB4) {
+        const notaLimpia = textoNotaB4.replace(/^\*?Nota:\s*\*?/i, '').trim();
+        b4Footnote.replaceChildren();
+        const etiquetaNota = document.createElement('strong');
+        etiquetaNota.textContent = 'Nota: ';
+        b4Footnote.append(etiquetaNota, document.createTextNode(notaLimpia));
+        b4Footnote.hidden = false;
+    }
 
     // ESTA ES LA SOLUCIÓN: Sobrescribe el CSS para que la cuadrícula 
     // tenga exactamente tantas columnas como años haya en Google Sheets
@@ -1419,10 +1677,11 @@ fetchSheetData('06_Personal_Academico').then(data => {
     
     let textosInterfase = {};
     let contratacion = [];
-    let sniiGen = { mujeres: 0, hombres: 0 };
+    let sniiGen = { mujeres: 0, hombres: 0, noBinario: 0 };
     let sniiNivel = [];
-    let prodepGen = { mujeres: 0, hombres: 0 };
+    let prodepGen = { mujeres: 0, hombres: 0, noBinario: 0 };
     let cuerpos = {};
+    let sniiPorCentro = {};
 
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
@@ -1441,14 +1700,25 @@ fetchSheetData('06_Personal_Academico').then(data => {
 
         if (cat && cat !== 'Categoría') {
         if (cat === 'Tipo de Contratación') contratacion.push({ nombre: ind, valor: val });
+        else if (cat === 'SNII por Centro') {
+            const centro = ind;
+            const departamento = (row[2] || '').trim();
+            const investigadores = cleanNum(row[3]);
+            if (centro && departamento) {
+                if (!sniiPorCentro[centro]) sniiPorCentro[centro] = [];
+                sniiPorCentro[centro].push({ nombre: departamento, valor: investigadores });
+            }
+        }
         else if (cat === 'Investigadores (SNII) - Género') {
             if (ind.toLowerCase() === 'mujeres') sniiGen.mujeres = val;
             if (ind.toLowerCase() === 'hombres') sniiGen.hombres = val;
+            if (ind.toLowerCase() === 'no binario') sniiGen.noBinario = val;
         }
         else if (cat === 'Investigadores (SNII) - Nivel') sniiNivel.push({ nombre: ind, valor: val });
         else if (cat === 'Perfil PRODEP') {
             if (ind.toLowerCase() === 'mujeres') prodepGen.mujeres = val;
             if (ind.toLowerCase() === 'hombres') prodepGen.hombres = val;
+            if (ind.toLowerCase() === 'no binario') prodepGen.noBinario = val;
         }
         else if (cat === 'Cuerpos Académicos') cuerpos[ind] = val;
         }
@@ -1502,7 +1772,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
     
     let totalSnii = sniiNivel.reduce((sum, item) => sum + item.valor, 0);
     document.getElementById('b6-snii-total').setAttribute('data-target', totalSnii);
-    setSafeHTML(document.getElementById('b6-snii-texto'), `Profesores con distinción SNII (<strong>${sniiGen.mujeres} mujeres</strong> y <strong>${sniiGen.hombres} hombres</strong>).`);
+    setSafeHTML(document.getElementById('b6-snii-texto'), `Profesores con distinción SNII (<strong>${sniiGen.mujeres} mujeres</strong>, <strong>${sniiGen.hombres} hombres</strong> y <strong>${sniiGen.noBinario} personas no binarias</strong>).`);
 
     let htmlSnii = '';
     sniiNivel.forEach(n => {
@@ -1518,9 +1788,161 @@ fetchSheetData('06_Personal_Academico').then(data => {
     if (textosInterfase['TARJETA 4 PRIMERA LÍNEA']) document.getElementById('b6-t4-tag').innerText = textosInterfase['TARJETA 4 PRIMERA LÍNEA'].h;
     if (textosInterfase['TARJETA 4 SECUNDARIA']) document.getElementById('b6-t4-sec').innerText = textosInterfase['TARJETA 4 SECUNDARIA'].h;
 
-    let totalProdep = prodepGen.mujeres + prodepGen.hombres;
+    let totalProdep = prodepGen.mujeres + prodepGen.hombres + prodepGen.noBinario;
     document.getElementById('b6-prodep-total').setAttribute('data-target', totalProdep);
-    setSafeHTML(document.getElementById('b6-prodep-texto'), `Fortalecimiento de las funciones sustantivas de la institución, integrado por <strong>${prodepGen.mujeres} mujeres</strong> y <strong>${prodepGen.hombres} hombres</strong> con reconocimiento vigente.`);
+    setSafeHTML(document.getElementById('b6-prodep-texto'), `Fortalecimiento de las funciones sustantivas de la institución, integrado por <strong>${prodepGen.mujeres} mujeres</strong>, <strong>${prodepGen.hombres} hombres</strong> y <strong>${prodepGen.noBinario || 0} personas no binarias</strong> con reconocimiento vigente.`);
+
+    // 5. Gráfico interactivo de investigadores SNII por centro o departamento
+    const centroContainer = document.getElementById('b6-snii-distribucion');
+    const centroTitulo = document.getElementById('b6-snii-distribucion-subtitulo');
+    const centroResumen = document.getElementById('b6-snii-distribucion-resumen');
+    const centroBotones = document.querySelectorAll('[data-snii-group]');
+    const listaCentros = Object.entries(sniiPorCentro);
+    const registrosSnii = listaCentros.flatMap(([centro, departamentos]) =>
+        departamentos.map(d => ({ centro, departamento: d.nombre, valor: d.valor }))
+    );
+    const totalInvestigadoresPorCentro = listaCentros.reduce((total, [, departamentos]) =>
+        total + departamentos.reduce((subtotal, d) => subtotal + d.valor, 0), 0
+    );
+
+    function iconoCentro(nombre) {
+        const texto = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        let dibujo = '<path d="M4 20h16M6 20V8l6-4 6 4v12M9 10h1m4 0h1m-6 4h1m4 0h1m-5 6v-4h2v4"/>';
+        if (texto.includes('basica')) dibujo = '<path d="M9 3h6m-5 0v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3M8 15h8M10 18h.01M14 17h.01"/>';
+        else if (texto.includes('social') || texto.includes('humanidad')) dibujo = '<circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1"/>';
+        else if (texto.includes('econom') || texto.includes('administr')) dibujo = '<path d="M4 20h16M6 16h3v4H6zm5-7h3v11h-3zm5-5h3v16h-3z"/>';
+        else if (texto.includes('diseno') || texto.includes('construccion')) dibujo = '<path d="M3 3v18h18L3 3Z"/><path d="M7 11v6h6l-6-6Z"/><path d="M3 7h2M3 11h1.5M3 15h2M7 21v-2M11 21v-1.5M15 21v-2"/>';
+        else if (texto.includes('agropecuaria')) dibujo = '<path d="M20 4C11 4 5 7 5 14a6 6 0 0 0 6 6c7 0 9-7 9-16ZM4 21l9-9m-3 3-1-4m4 1 4 1"/>';
+        else if (texto.includes('salud')) dibujo = '<path d="M7 2H5a1 1 0 0 0-1 1v5a5 5 0 0 0 10 0V3a1 1 0 0 0-1-1h-2M7 1.5v2M11 1.5v2M9 13v3.5a4.5 4.5 0 0 0 9 0v-3"/><circle cx="18" cy="11" r="2.5"/><circle cx="18" cy="11" r="0.6" fill="currentColor"/>';
+        else if (texto.includes('ingenier')) dibujo = '<path d="m12 3 2 2.1 3-.2.9 2.8 2.7 1.4-.7 2.9.7 2.9-2.7 1.4-.9 2.8-3-.2L12 21l-2-2.1-3 .2-.9-2.8-2.7-1.4.7-2.9-.7-2.9 2.7-1.4.9-2.8 3 .2L12 3Z"/><circle cx="12" cy="12" r="3"/>';
+        else if (texto.includes('empresarial')) dibujo = '<path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v16M15 21V10a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v11M8 8h1M11 8h1M8 11.5h1M11 11.5h1M8 15h1M11 15h1M17.2 13h.8M17.2 16.5h.8M9 21v-3h2v3"/>';
+        else if (texto.includes('educacion')) dibujo = '<path d="m2 9 10-5 10 5-10 5L2 9Zm4 3v5c4 3 8 3 12 0v-5m4-3v7"/>';
+        else if (texto.includes('artes') || texto.includes('cultura')) dibujo = '<path d="M3 5.5c3.2-1.2 6.2-.5 9 1.1v7.1c0 3.1-1.8 5.6-5 7.3-2.7-1.7-4-4-4-7V5.5Z"/><path d="M12 7.2c2.8-1.8 5.8-2.5 9-1.7V14c0 3-1.3 5.3-4 7-2.6-1.4-4.2-3.3-4.8-5.7"/><ellipse cx="7" cy="11" rx="1" ry="1.3"/><ellipse cx="11" cy="11" rx="1" ry="1.3"/><path d="M6.5 15c1.5 1.2 3 1.2 4.5 0m3.2-3.8c.6-.8 1.5-.8 2.1 0m2.3 0c.6-.8 1.5-.8 2.1 0m-5.2 4.6c1.5-1.2 3-1.2 4.5 0"/>';
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${dibujo}</svg>`;
+    }
+
+    function renderDistribucionSnii(agrupacion) {
+        if (!centroContainer) return;
+        const etiquetaTitulo = agrupacion === 'departamento'
+            ? 'Agrupación por departamento'
+            : 'Agrupación por centro y departamento';
+
+        if (centroTitulo) centroTitulo.textContent = etiquetaTitulo;
+        centroBotones.forEach(boton => {
+            const activo = boton.dataset.sniiGroup === agrupacion;
+            boton.classList.toggle('is-active', activo);
+            boton.setAttribute('aria-pressed', String(activo));
+        });
+
+        if (!registrosSnii.length) {
+            setSafeHTML(centroContainer, '<p class="metric-subtext">No hay datos de distribución disponibles.</p>');
+            return;
+        }
+
+        const generarFila = (etiqueta, valor, barPct, porcentajeTotal, etiquetaVisual, clase = '') => `
+            <div class="snii-chart-row ${clase}">
+                <div class="snii-chart-labels">${etiquetaVisual}</div>
+                <div class="snii-chart-track" role="img" aria-label="${escapeHTML(etiqueta)}: ${valor.toLocaleString('es-MX')} investigadores">
+                    <div class="snii-chart-bar" style="width:${barPct.toFixed(2)}%"></div>
+                </div>
+                <div class="snii-chart-metrics"><span class="snii-chart-value">${valor.toLocaleString('es-MX')}</span><span class="snii-chart-percent">${porcentajeTotal.toFixed(1)}%</span></div>
+            </div>`;
+
+        let html = '';
+        if (agrupacion === 'centro-departamento') {
+            const centros = Object.entries(sniiPorCentro).map(([centro, departamentos]) => ({
+                nombre: centro,
+                departamentos: [...departamentos].sort((a, b) => b.valor - a.valor || a.nombre.localeCompare(b.nombre, 'es')),
+                total: departamentos.reduce((sum, departamento) => sum + departamento.valor, 0)
+            })).sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre, 'es'));
+            const maxCentro = Math.max(...centros.map(centro => centro.total), 0);
+            const totalDepartamentos = Object.values(sniiPorCentro).reduce((sum, departamentos) => sum + departamentos.length, 0);
+            if (centroResumen) centroResumen.textContent = `${totalInvestigadoresPorCentro.toLocaleString('es-MX')} investigadores en ${centros.length.toLocaleString('es-MX')} centros y ${totalDepartamentos.toLocaleString('es-MX')} departamentos`;
+
+            html = centros.map(centro => {
+                const etiquetaCentro = `<div class="snii-chart-center-trigger" role="button" tabindex="0" aria-expanded="false" data-center-toggle="${escapeHTML(centro.nombre)}"><span class="center-toggle" aria-hidden="true"></span><span class="snii-center-icon">${iconoCentro(centro.nombre)}</span><span class="snii-chart-label">${escapeHTML(centro.nombre)}</span></div>`;
+                const filaCentro = generarFila(centro.nombre, centro.total, maxCentro > 0 ? centro.total / maxCentro * 100 : 0,
+                    totalInvestigadoresPorCentro > 0 ? centro.total / totalInvestigadoresPorCentro * 100 : 0,
+                    etiquetaCentro, 'snii-chart-parent-row');
+                const filasDepartamentos = centro.departamentos.map(departamento => `
+                    <div class="snii-chart-department-row">
+                        <span class="snii-department-name"><span class="snii-chart-label">${escapeHTML(departamento.nombre)}</span></span>
+                        <span class="snii-department-count">${departamento.valor.toLocaleString('es-MX')}</span>
+                    </div>`).join('');
+                const numDeptos = centro.departamentos.length;
+                const txtInvestigadores = centro.total === 1 ? 'investigador' : 'investigadores';
+                const txtDepartamentos = numDeptos === 1 ? 'departamento' : 'departamentos';
+                const tarjetaResumen = `
+                    <div class="snii-center-summary-card" aria-label="Resumen de ${escapeHTML(centro.nombre)}">
+                        <div class="snii-summary-icon">${iconoCentro(centro.nombre)}</div>
+                        <div class="snii-summary-block">
+                            <span class="snii-summary-label">Total del centro</span>
+                            <strong class="snii-summary-total">${centro.total.toLocaleString('es-MX')}</strong>
+                            <span class="snii-summary-sub">${txtInvestigadores}</span>
+                        </div>
+                        <div class="snii-summary-divider" aria-hidden="true"></div>
+                        <div class="snii-summary-block">
+                            <strong class="snii-summary-deptos">${numDeptos.toLocaleString('es-MX')}</strong>
+                            <span class="snii-summary-sub">${txtDepartamentos}</span>
+                        </div>
+                    </div>`;
+                return `<div class="snii-chart-center-group">${filaCentro}<div class="snii-chart-departments is-collapsed"><div class="snii-departments-list">${filasDepartamentos}</div>${tarjetaResumen}</div></div>`;
+            }).join('');
+        } else {
+            const grupos = new Map();
+            registrosSnii.forEach(registro => {
+                const etiqueta = registro.departamento;
+                const actual = grupos.get(etiqueta) || { valor: 0, centros: new Set() };
+                actual.valor += registro.valor;
+                if (registro.centro) actual.centros.add(registro.centro);
+                grupos.set(etiqueta, actual);
+            });
+            const datos = [...grupos.entries()].sort((a, b) => b[1].valor - a[1].valor || a[0].localeCompare(b[0], 'es'));
+            const valorMaximo = Math.max(...datos.map(([, info]) => info.valor), 0);
+            if (centroResumen) centroResumen.textContent = `${totalInvestigadoresPorCentro.toLocaleString('es-MX')} investigadores en ${datos.length.toLocaleString('es-MX')} departamentos`;
+
+            html = datos.map(([etiqueta, info]) => {
+                const { valor, centros } = info;
+                const listaCentrosDepto = [...centros];
+                const centroPrincipal = listaCentrosDepto[0] || '';
+                const textoCentro = listaCentrosDepto.join(' • ');
+                const porcentajeTotal = totalInvestigadoresPorCentro > 0 ? (valor / totalInvestigadoresPorCentro) * 100 : 0;
+                const tooltipCentro = textoCentro
+                    ? `<span class="snii-dept-center-tooltip" role="tooltip"><span class="snii-tooltip-icon">${iconoCentro(centroPrincipal)}</span><span class="snii-tooltip-text"><span class="snii-tooltip-prefix">Centro:</span> ${escapeHTML(textoCentro)}</span></span>`
+                    : '';
+                const etiquetaVisual = `<span class="snii-department-name"><span class="snii-department-dot" aria-hidden="true"></span><span class="snii-chart-label">${escapeHTML(etiqueta)}</span></span>${tooltipCentro}`;
+                return generarFila(etiqueta, valor, valorMaximo > 0 ? valor / valorMaximo * 100 : 0,
+                    porcentajeTotal, etiquetaVisual, 'snii-dept-flat-row');
+            }).join('');
+        }
+
+        setSafeHTML(centroContainer, html);
+        centroContainer.querySelectorAll('[data-center-toggle]').forEach(disparador => {
+            const filaPadre = disparador.closest('.snii-chart-parent-row');
+            const alternar = () => {
+                const grupo = disparador.closest('.snii-chart-center-group');
+                const departamentos = grupo?.querySelector('.snii-chart-departments');
+                if (!departamentos) return;
+                const expandido = departamentos.classList.toggle('is-expanded');
+                departamentos.classList.toggle('is-collapsed', !expandido);
+                grupo.classList.toggle('is-expanded', expandido);
+                disparador.classList.toggle('is-expanded', expandido);
+                disparador.setAttribute('aria-expanded', String(expandido));
+            };
+            (filaPadre || disparador).addEventListener('click', alternar);
+            disparador.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    alternar();
+                }
+            });
+        });
+    }
+
+    centroBotones.forEach(boton => boton.addEventListener('click', () => {
+        renderDistribucionSnii(boton.dataset.sniiGroup);
+    }));
+    renderDistribucionSnii('centro-departamento');
 
     // 6. Tarjeta 5: Cuerpos Académicos
     if (textosInterfase['TARJETA 5 PRIMERA LÍNEA']) document.getElementById('b6-t5-tag').innerText = textosInterfase['TARJETA 5 PRIMERA LÍNEA'].h;
@@ -2450,16 +2872,47 @@ fetchSheetData('16_Incorporadas').then(data => {
 // AUTOMATIZACIÓN BLOQUE 16: OTROS DATOS (CORRECCIÓN ESTRICTA DE TÍTULOS)
 // =========================================================================
 window.addEventListener('DOMContentLoaded', () => {
-fetchSheetData('15_Otros').then(data => {
+const fetchRangoFila = (sheetName, rango) => {
+    if (USE_LOCAL_XLSX) return Promise.resolve([]);
+    return fetch(`${getCsvUrl(sheetName)}&range=${encodeURIComponent(rango)}&headers=0`)
+        .then(res => (res.ok ? res.text() : ''))
+        .then(csv => (csv ? parseCSV(csv) : []))
+        .catch(() => []);
+};
+
+Promise.all([
+    fetchSheetData('15_Otros'),
+    fetchRangoFila('15_Otros', 'A38:Z38')
+]).then(async ([data, fila38Data]) => {
     let datos = {};
     let desgloseFeria = [];
+    const bibliotecas = { 'TITULOS': [], 'VOLUMENES': [] };
+    let bibliotecaConclInicio = '';
+    let bibliotecaConclFin = '';
+    let filaConclusionIdx = -1;
 
     const parseDecimal = (val) => parseFloat(String(val).replace(/[^\d.-]/g, '')) || 0;
+    const normalizarClave = (val) => String(val || '').trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '');
 
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
         // Validar que la fila exista y tenga al menos hasta la columna C (índice 2)
         if (!row || row.length < 3) continue; 
+
+        const colA = normalizarClave(row[0]);
+        const colBTipo = normalizarClave(row[1]);
+        const colCNodo = String(row[2] || '').trim();
+        const colDValor = String(row[3] || '').trim();
+        if (colA === 'BIBLIOTECA' && (colBTipo === 'TITULOS' || colBTipo === 'VOLUMENES') && colCNodo && colDValor) {
+            bibliotecas[colBTipo].push({ campus: colCNodo, cantidad: parseDecimal(colDValor) });
+            continue;
+        }
+        if (colA === 'BIBLIOTECA' && colBTipo === 'CONCLUSION' && colCNodo) {
+            filaConclusionIdx = i + 1;
+            bibliotecaConclInicio = colCNodo;
+            bibliotecaConclFin = row.slice(3).map(valor => String(valor || '').trim()).filter(Boolean).join(' ');
+            continue;
+        }
 
         // Limpieza estricta: un solo espacio entre palabras, sin acentos, todo mayúsculas
         let colB = String(row[1] || '')
@@ -2487,6 +2940,24 @@ fetchSheetData('15_Otros').then(data => {
         }
     }
 
+    // Google Sheets (gviz/tq) omite textos en la columna D cuando la mayoría de la columna son números.
+    // Se recupera C38 y D38 directamente del rango de esa fila.
+    if (!bibliotecaConclInicio || !bibliotecaConclFin) {
+        let filaRango = (fila38Data && fila38Data[0]) || [];
+        if ((!filaRango.length || normalizarClave(filaRango[1]) !== 'CONCLUSION') && filaConclusionIdx > 0 && filaConclusionIdx !== 38) {
+            const extraData = await fetchRangoFila('15_Otros', `A${filaConclusionIdx}:Z${filaConclusionIdx}`);
+            if (extraData && extraData[0]) filaRango = extraData[0];
+        }
+        if (filaRango.length >= 3) {
+            if (!bibliotecaConclInicio && String(filaRango[2] || '').trim()) {
+                bibliotecaConclInicio = String(filaRango[2] || '').trim();
+            }
+            if (!bibliotecaConclFin) {
+                bibliotecaConclFin = filaRango.slice(3).map(valor => String(valor || '').trim()).filter(Boolean).join(' ');
+            }
+        }
+    }
+
     const b16 = document.getElementById('bloque-16-cards');
     if (!b16) return;
 
@@ -2494,7 +2965,48 @@ fetchSheetData('15_Otros').then(data => {
     document.getElementById('b16-tag-text').innerText = datos['TAG'] || 'OTROS DATOS';
     document.getElementById('b16-title').innerText = datos['TITLE'] || 'Sobre nuestra Universidad';
 
-    // 2. Historias Narrativas 
+    // 2. Sistema Bibliotecario: detalle por sede y totales de títulos y volúmenes.
+    const bibliotecasCard = document.getElementById('b16-bibliotecas-card');
+    const bibliotecasDesglose = document.getElementById('b16-bibliotecas-desglose');
+    const bibliotecasConcl = document.getElementById('b16-bibliotecas-concl');
+    const totalTitulos = bibliotecas['TITULOS'].reduce((total, item) => total + item.cantidad, 0);
+    const totalVolumenes = bibliotecas['VOLUMENES'].reduce((total, item) => total + item.cantidad, 0);
+    const formatoBiblioteca = (numero) => numero.toLocaleString('es-MX', { maximumFractionDigits: 0 });
+    if (bibliotecasCard && bibliotecasDesglose && (bibliotecas['TITULOS'].length || bibliotecas['VOLUMENES'].length)) {
+        const iconoTitulos = `<svg viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="var(--uaa-magenta)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M38 8H11a4 4 0 0 0 0 8h27Z" fill="rgba(224,0,90,.08)"></path><path d="M38 8a4 4 0 0 1 0 8M15 12h21"></path><path d="M10 20h27a4 4 0 0 1 0 8H10Z" fill="rgba(224,0,90,.16)"></path><path d="M10 20a4 4 0 0 0 0 8M12 24h21"></path><path d="M38 32H11a4 4 0 0 0 0 8h27Z" fill="rgba(224,0,90,.08)"></path><path d="M38 32a4 4 0 0 1 0 8M15 36h21"></path></svg>`;
+        const iconoVolumenes = `<svg viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="var(--uaa-magenta)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M4 41h40" stroke-width="3"></path><rect x="7" y="13" width="7" height="28" rx="1.2" fill="rgba(224,0,90,.16)"></rect><path d="M7 18h7M7 35h7"></path><rect x="16" y="8" width="7" height="33" rx="1.2" fill="rgba(224,0,90,.08)"></rect><path d="M16 13h7M16 35h7"></path><rect x="25" y="15" width="6" height="26" rx="1.2" fill="rgba(224,0,90,.16)"></rect><path d="M25 20h6"></path><path d="M32.5 14.2l5.8-1.5 6.2 26.6-5.8 1.5Z" fill="rgba(224,0,90,.08)"></path><path d="M33.6 19l5.8-1.5"></path></svg>`;
+        const iconoConclusion = `<svg viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="var(--uaa-gold-vibrant)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M24 4v5M14 6.5l2.5 4M34 6.5l-2.5 4"></path><path d="M24 18c-5-3.5-11-4.5-18-3.5v23c7-1 13 0 18 3.5c5-3.5 11-4.5 18-3.5v-23c-7-1-13 0-18 3.5Z" fill="rgba(240,180,0,.16)"></path><path d="M24 18v23"></path><path d="M10.5 21c3.5-.3 6.5.4 9.5 2M10.5 27c3.5-.3 6.5.4 9.5 2M37.5 21c-3.5-.3-6.5.4-9.5 2M37.5 27c-3.5-.3-6.5.4-9.5 2" stroke-width="1.8"></path></svg>`;
+        const tiposBiblioteca = [
+            { key: 'TITULOS', label: 'Títulos', total: totalTitulos, icon: iconoTitulos },
+            { key: 'VOLUMENES', label: 'Volúmenes', total: totalVolumenes, icon: iconoVolumenes }
+        ];
+        setSafeHTML(bibliotecasDesglose, tiposBiblioteca.map(tipo => {
+            const filas = bibliotecas[tipo.key].map(item => `
+                <div style="display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(22,48,114,0.1);">
+                    <span style="color: var(--text-primary);">${escapeHTML(item.campus)}</span>
+                    <strong style="color: var(--uaa-navy); white-space: nowrap;">${formatoBiblioteca(item.cantidad)}</strong>
+                </div>`).join('');
+            return `<div style="background: rgba(21,96,130,0.04); padding: 18px 20px; border-radius: 16px;">
+                <h4 style="margin: 0 0 8px; color: var(--uaa-navy); display: flex; justify-content: space-between; align-items: center; gap: 12px;"><span>${tipo.label}</span>${tipo.icon}</h4>${filas}
+                <div style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 0 2px; color: var(--uaa-navy);">
+                    <strong>Total de ${tipo.label.toLowerCase()}</strong><strong>${formatoBiblioteca(tipo.total)}</strong>
+                </div></div>`;
+        }).join(''));
+        bibliotecasCard.style.display = '';
+        if (bibliotecasConcl && (bibliotecaConclInicio || bibliotecaConclFin)) {
+            const textoInicio = bibliotecaConclInicio ? `${escapeHTML(bibliotecaConclInicio)} ` : '';
+            const textoFin = bibliotecaConclFin ? ` ${escapeHTML(bibliotecaConclFin)}` : '';
+            setSafeHTML(
+                bibliotecasConcl,
+                `${iconoConclusion}<span>${textoInicio}<strong style="color: var(--uaa-navy); font-size: 22px;">${formatoBiblioteca(totalVolumenes)}</strong>${textoFin}</span>`
+            );
+            bibliotecasConcl.style.display = 'flex';
+            bibliotecasConcl.style.alignItems = 'center';
+            bibliotecasConcl.style.gap = '12px';
+        }
+    }
+
+    // 3. Historias Narrativas
     const movNac = datos['NACIONAL'] || '0';
     const movInt = datos['INTERNACIONAL'] || '0';
     setSafeHTML(document.getElementById('b16-mov-desc'), `La proyección global de nuestra comunidad estudiantil se fortalece a través de los programas de intercambio. Actualmente contamos con una participación de <strong style="color: var(--uaa-navy); font-size: 30px;">${movNac}</strong> estudiantes en movilidad académica a nivel nacional y <strong style="color: var(--uaa-navy); font-size: 30px;">${movInt}</strong> estudiantes a nivel internacional.`);

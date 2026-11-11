@@ -512,7 +512,7 @@
         </div>
       </article>
 
-      <article class="card card-4 flex-col-between reveal">
+      <article class="card card-4 flex-col-between reveal" id="card-padron-egel" role="button" tabindex="0" aria-haspopup="dialog" aria-controls="modalEgel" style="cursor: pointer;" title="Ver carreras incorporadas al Padrón EGEL">
         <div>
           <div class="flex-row-between" style="margin-bottom: 16px;">
             <div>
@@ -527,6 +527,10 @@
             style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;">...</div>
           <div class="hero-metric-bar-yellow" style="max-width: 80px; margin-bottom: 14px;"></div>
           <p class="metric-subtext t4-desc" style="margin: 0;">...</p>
+        </div>
+        <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(22, 48, 114, 0.08); display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--uaa-teal); letter-spacing: 0.04em;">
+          <span>Consultar carreras incorporadas</span>
+          <span aria-hidden="true" style="font-size: 14px;">&#8599;</span>
         </div>
       </article>
 
@@ -597,6 +601,7 @@
         <div class="history-chart-x-axis" id="b4-history-xaxis">
           <!-- Inyectado por JS respetando tu CSS original -->
         </div>
+        <p id="b4-footnote" class="chart-footnote" hidden></p>
       </article>
     </section>
 
@@ -660,6 +665,7 @@
           style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
           <!-- Inyectado por JS -->
         </div>
+        <p class="metric-subtext" style="margin: 18px 0 0;"><em>Nota: No se considera al personal contratado por honorarios.</em></p>
       </article>
 
       <article class="card card-7 reveal">
@@ -699,6 +705,23 @@
         <div
           style="background: rgba(22, 48, 114, 0.03); padding: 16px; border-radius: 16px; border: 1px solid rgba(22, 48, 114, 0.06);">
           <p class="metric-subtext" id="b6-prodep-texto" style="margin: 0;">...</p>
+        </div>
+      </article>
+
+      <article class="card card-12 reveal" id="b6-snii-distribucion-card">
+        <div class="flex-row-between" style="flex-wrap:wrap; align-items:center; margin-bottom:24px;">
+          <div>
+            <div class="card-section-tag">Distribución de investigadores SNII</div>
+            <h3 class="card-title xl" id="b6-snii-distribucion-subtitulo">Agrupación por centro y departamento</h3>
+          </div>
+          <div class="snii-group-toggle" role="group" aria-label="Agrupar investigadores SNII">
+            <button type="button" class="snii-group-button is-active" data-snii-group="centro-departamento" aria-pressed="true">Por centro y departamento</button>
+            <button type="button" class="snii-group-button" data-snii-group="departamento" aria-pressed="false">Por departamento</button>
+          </div>
+        </div>
+        <div id="b6-snii-distribucion-resumen" class="metric-subtext" aria-live="polite" style="margin-bottom:18px;"></div>
+        <div id="b6-snii-distribucion" class="snii-chart" aria-live="polite">
+          <!-- Inyectado por JS -->
         </div>
       </article>
 
@@ -1851,6 +1874,20 @@
         </div>
       </article>
 
+      <!-- Tarjeta Sistema Bibliotecario -->
+      <article class="card card-12 reveal" id="b16-bibliotecas-card" style="display: none;">
+        <div class="flex-row-start" style="margin-bottom: 16px;">
+          <div class="icon-box lg icon-navy" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 32px; height: 32px;">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+          </div>
+          <h3 class="card-title lg">Sistema Bibliotecario</h3>
+        </div>
+        <div id="b16-bibliotecas-desglose" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px;"></div>
+        <p id="b16-bibliotecas-concl" style="font-size: 16px; margin-top: 24px; text-align: justify; color: var(--text-primary); line-height: 1.6; display: none;"></p>
+      </article>
+
       <!-- Tarjeta Feria Ambiental -->
       <article class="card card-12 reveal">
         <div class="flex-row-start" style="margin-bottom: 16px;">
@@ -1980,6 +2017,46 @@
       alt="Da clic sobre el centro para desplegar el detalle por carrera"
       class="matricula-modal-hint"
     >
+  </div>
+
+  <!-- MODAL PADRÓN EGEL (BLOQUE 03) -->
+  <div class="glass-modal-overlay" id="modalEgel">
+    <div class="glass-modal" style="max-width: 980px;">
+      <div class="modal-header">
+        <div>
+          <div class="card-section-tag" style="margin-bottom: 2px;">Padrón EGEL • CENEVAL</div>
+          <h2 class="modal-title">Programas de Alto Rendimiento Académico</h2>
+        </div>
+        <button id="close-modal-egel" class="close-btn" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div style="padding: 14px clamp(16px, 3vw, 32px); background: rgba(255, 255, 255, 0.45); border-bottom: 1px solid rgba(22, 48, 114, 0.08); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+        <div id="egel-filter-buttons" style="display: flex; flex-wrap: wrap; gap: 8px;" role="group" aria-label="Filtrar por Nivel EGEL">
+          <!-- Botones de filtro inyectados por JS -->
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-secondary);">
+          <strong>NDGS:</strong> Nivel de Desempeño Global Satisfactorio &nbsp;•&nbsp; <strong>NDGSS:</strong> Sobresaliente
+        </div>
+      </div>
+      <div class="matricula-modal-layout">
+        <div class="modal-body matricula-table-scroll">
+          <table class="glass-table" id="tablaEgel">
+            <thead>
+              <tr>
+                <th style="width: 80px; text-align: center;">NIVEL</th>
+                <th style="width: auto; white-space: normal;">PROGRAMA EDUCATIVO (PE)</th>
+                <th>CAMPUS</th>
+                <th class="text-right">TOTAL (%)</th>
+                <th class="text-right col-gender">NDGS (%)</th>
+                <th class="text-right col-gender" style="padding-right: clamp(22px, 3vw, 34px);">NDGSS (%)</th>
+              </tr>
+            </thead>
+            <tbody id="egel-table-body">
+              <!-- Filas inyectadas por JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- AQUI SE MUEVE EL BLOQUE HTML DEL MENÚ FLOTANTE, ARRIBA DEL SCRIPT -->

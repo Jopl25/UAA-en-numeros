@@ -75,9 +75,16 @@ html {
 .nav-glass-menu,
 .directory-list.scrollable,
 .modal-body,
-.table-responsive {
+.table-responsive,
+.snii-chart,
+.chatbot-messages {
     scrollbar-width: thin;
     scrollbar-color: rgba(22, 48, 114, 0.25) transparent;
+    overscroll-behavior: contain;
+}
+
+body.modal-open {
+    overflow: hidden;
 }
 
 .nav-glass-menu::-webkit-scrollbar,
@@ -923,6 +930,501 @@ body::before {
     margin-bottom: clamp(10px, 1.5vw, 18px);
 }
 
+.snii-group-toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(22, 48, 114, 0.06);
+    border-radius: 999px;
+}
+
+.snii-group-button {
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 15px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease, box-shadow .2s ease;
+}
+
+.snii-group-button:hover { color: var(--uaa-navy); }
+
+.snii-group-button.is-active {
+    background: #fff;
+    color: var(--uaa-navy);
+    box-shadow: 0 2px 8px rgba(22, 48, 114, 0.12);
+}
+
+.snii-group-button:focus-visible {
+    outline: 3px solid var(--uaa-gold-vibrant);
+    outline-offset: 2px;
+}
+
+.snii-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: min(620px, 70vh);
+    overflow-y: auto;
+    padding: 2px 8px 2px 2px;
+}
+
+.snii-chart-row {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.85fr) minmax(120px, 1.5fr) 118px;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.snii-chart-center-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 3px 6px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(22, 48, 114, 0.06);
+    transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.snii-chart-center-group.is-expanded {
+    background: rgba(255, 255, 255, 0.72);
+    border-color: rgba(22, 48, 114, 0.12);
+    box-shadow: 0 10px 26px -12px rgba(22, 48, 114, 0.15);
+}
+
+.snii-chart-departments {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px;
+    align-items: start;
+    gap: 16px;
+    padding: 2px 8px 6px;
+}
+
+.snii-chart-departments.is-collapsed { display: none; }
+
+.snii-departments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.snii-chart-parent-row {
+    padding: 4px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.snii-chart-parent-row:hover,
+.snii-chart-center-group.is-expanded .snii-chart-parent-row {
+    background: rgba(22, 48, 114, 0.06);
+}
+
+.snii-chart-parent-row .snii-chart-labels {
+    position: relative;
+}
+
+/* Línea vertical inicial desde el botón de despliegue cuando el centro está abierto */
+.snii-chart-parent-row:has(.snii-chart-center-trigger[aria-expanded="true"]) .snii-chart-labels::after {
+    content: "";
+    position: absolute;
+    left: 28px;
+    top: calc(50% + 12px);
+    bottom: -14px;
+    width: 1.5px;
+    background: #949eb0;
+}
+
+.snii-chart-department-row {
+    position: relative;
+    margin-left: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 12px;
+    border-radius: 7px;
+    background: rgba(22, 48, 114, 0.035);
+    font-size: 12.5px;
+    min-width: 0;
+}
+
+.snii-chart-department-row .snii-chart-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* Línea vertical del conector por cada departamento */
+.snii-chart-department-row::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: -4px;
+    bottom: 0;
+    width: 1.5px;
+    background: #949eb0;
+}
+
+/* En el último departamento del centro, la línea vertical termina en el nodo circular */
+.snii-chart-department-row:last-child::before {
+    bottom: 50%;
+}
+
+/* Nodo circular del conector en cada departamento */
+.snii-chart-department-row::after {
+    content: "";
+    position: absolute;
+    left: -19.25px;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid #949eb0;
+    background: #eef1f6;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+/* Trazo horizontal desde el nodo circular hacia el nombre del departamento */
+.snii-chart-department-row .snii-department-name::before {
+    content: "";
+    position: absolute;
+    left: -15.5px;
+    top: 50%;
+    width: 8px;
+    height: 1.5px;
+    background: #949eb0;
+    transform: translateY(-50%);
+}
+
+.snii-department-count {
+    flex: 0 0 auto;
+    color: var(--uaa-navy);
+    font-weight: 700;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.snii-center-summary-card {
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(22, 48, 114, 0.045);
+    border: 1px solid rgba(22, 48, 114, 0.09);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+.snii-summary-icon {
+    width: 26px;
+    height: 26px;
+    color: var(--uaa-navy);
+    display: grid;
+    place-items: center;
+}
+
+.snii-summary-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+.snii-summary-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.snii-summary-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.snii-summary-total {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.05;
+    color: var(--uaa-navy);
+    font-variant-numeric: tabular-nums;
+}
+
+.snii-summary-deptos {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--uaa-navy);
+    font-variant-numeric: tabular-nums;
+}
+
+.snii-summary-sub {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.snii-summary-divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(22, 48, 114, 0.1);
+}
+
+.snii-chart-center-trigger {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.snii-chart-center-trigger:focus-visible {
+    outline: 2px solid var(--uaa-gold-vibrant);
+    outline-offset: 3px;
+    border-radius: 10px;
+}
+
+.snii-department-name {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+}
+
+.snii-dept-flat-row {
+    position: relative;
+    padding: 5px 10px;
+    border-radius: 10px;
+    transition: background 0.2s ease;
+}
+
+.snii-dept-flat-row:hover {
+    background: rgba(22, 48, 114, 0.05);
+    z-index: 5;
+}
+
+.snii-dept-flat-row .snii-chart-labels {
+    position: relative;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.snii-dept-center-tooltip {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 10px);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 8px 20px rgba(22, 48, 114, 0.16), 0 0 0 1px rgba(22, 48, 114, 0.08);
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--uaa-navy);
+    white-space: nowrap;
+    max-width: min(420px, 65vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-6px, -50%) scale(0.97);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+        visibility 0.2s;
+    z-index: 20;
+}
+
+.snii-dept-flat-row:hover .snii-dept-center-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(0, -50%) scale(1);
+}
+
+.snii-tooltip-icon {
+    display: grid;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid rgba(221, 166, 22, 0.28);
+    background: linear-gradient(145deg, #fff9e8, #ffedb5);
+    color: #9a6a00;
+}
+
+.snii-tooltip-icon svg {
+    width: 13px;
+    height: 13px;
+}
+
+.snii-tooltip-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.snii-tooltip-prefix {
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-right: 2px;
+}
+
+.snii-department-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    flex: 0 0 10px;
+    border-radius: 50%;
+    background: var(--uaa-gold-vibrant);
+    box-shadow: 0 0 0 3px rgba(221, 166, 22, 0.16);
+}
+
+.snii-chart-labels {
+    display: flex;
+    align-self: stretch;
+    min-width: 0;
+    align-items: center;
+    font-size: 13px;
+}
+
+.snii-chart-label {
+    overflow-wrap: anywhere;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.snii-chart-center {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+}
+
+.snii-center-icon {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    place-items: center;
+    border: 1px solid rgba(221, 166, 22, 0.28);
+    border-radius: 9px;
+    background: linear-gradient(145deg, #fff9e8, #ffedb5);
+    color: #9a6a00;
+    box-shadow: 0 2px 6px rgba(184, 132, 0, 0.1);
+}
+
+.snii-center-icon svg {
+    width: 17px;
+    height: 17px;
+}
+
+.snii-chart-value {
+    flex: 0 0 auto;
+    color: var(--uaa-navy);
+    font-size: 13.5px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.snii-chart-metrics {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.snii-chart-percent {
+    display: inline-block;
+    min-width: 52px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(22, 48, 114, 0.08);
+    color: var(--uaa-navy);
+    font-size: 11.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.snii-chart-track {
+    height: 11px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(22, 48, 114, 0.07);
+}
+
+.snii-chart-bar {
+    height: 100%;
+    min-width: 2px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--uaa-navy), var(--uaa-teal));
+    transition: width .45s ease;
+}
+
+.snii-dept-flat-row .snii-chart-bar {
+    background: linear-gradient(90deg, var(--text-muted), var(--uaa-gray));
+}
+
+@media (max-width: 760px) {
+    .snii-chart-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px 14px;
+    }
+
+    .snii-chart-track { grid-column: 1 / -1; }
+
+    .snii-chart-departments {
+        grid-template-columns: 1fr;
+    }
+
+    .snii-center-summary-card {
+        margin-left: 48px;
+        flex-direction: row;
+        justify-content: space-around;
+        padding: 14px 16px;
+    }
+
+    .snii-summary-divider {
+        width: 1px;
+        height: 36px;
+    }
+
+    .snii-chart-parent-row:has(.snii-chart-center-trigger[aria-expanded="true"]) .snii-chart-track {
+        margin-left: 48px;
+    }
+
+    .snii-chart-parent-row:has(.snii-chart-center-trigger[aria-expanded="true"]) .snii-chart-labels::after {
+        bottom: -41px;
+    }
+}
+
 .bar-labels {
     display: flex;
     justify-content: space-between;
@@ -1574,6 +2076,7 @@ body::before {
     opacity: 0;
     visibility: hidden;
     transition: 0.3s ease;
+    overscroll-behavior: contain;
 }
 
 .glass-modal-overlay.open {
@@ -1794,13 +2297,25 @@ body::before {
     transition: transform 0.25s ease;
 }
 
-.row-center[aria-expanded="true"] .center-toggle::before {
+.row-center[aria-expanded="true"] .center-toggle::before,
+.snii-chart-center-trigger[aria-expanded="true"] .center-toggle::before {
     transform: translateY(-1px) rotate(45deg);
 }
 
 .row-center:hover .center-toggle,
-.row-center[aria-expanded="true"] .center-toggle {
+.row-center[aria-expanded="true"] .center-toggle,
+.snii-chart-center-trigger:hover .center-toggle {
     border-color: rgba(22, 48, 114, 0.3);
+}
+
+.snii-chart-center-trigger[aria-expanded="true"] .center-toggle {
+    background: var(--uaa-navy);
+    border-color: var(--uaa-navy);
+}
+
+.snii-chart-center-trigger[aria-expanded="true"] .center-toggle::before {
+    border-right-color: #fff;
+    border-bottom-color: #fff;
 }
 
 /* Ícono de edificio institucional junto al nombre del centro */

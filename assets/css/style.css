@@ -75,9 +75,16 @@ html {
 .nav-glass-menu,
 .directory-list.scrollable,
 .modal-body,
-.table-responsive {
+.table-responsive,
+.snii-chart,
+.chatbot-messages {
     scrollbar-width: thin;
     scrollbar-color: rgba(22, 48, 114, 0.25) transparent;
+    overscroll-behavior: contain;
+}
+
+body.modal-open {
+    overflow: hidden;
 }
 
 .nav-glass-menu::-webkit-scrollbar,
@@ -2069,6 +2076,7 @@ body::before {
     opacity: 0;
     visibility: hidden;
     transition: 0.3s ease;
+    overscroll-behavior: contain;
 }
 
 .glass-modal-overlay.open {

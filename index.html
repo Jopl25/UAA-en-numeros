@@ -635,6 +635,34 @@
           <!-- La dona y las etiquetas flotantes se inyectarán por JS -->
         </div>
       </article>
+
+      <article class="card card-12 reveal" id="b5-timeseries-card" style="display: none;">
+        <div class="flex-row-between" style="flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 24px;">
+          <div>
+            <div class="card-section-tag" id="b5-ts-tag" style="margin-bottom: 4px;">Evolución Anual • Serie de Tiempo</div>
+            <h3 class="card-title xl" id="b5-ts-title">Histórico de Egresados por Nivel Educativo</h3>
+          </div>
+          <div class="segmented-control" id="b5-ts-filter" role="group" aria-label="Filtrar serie histórica por nivel educativo">
+            <button type="button" class="segment-btn active" data-ts-level="todos">Todos los niveles</button>
+            <button type="button" class="segment-btn" data-ts-level="licenciatura">Licenciatura</button>
+            <button type="button" class="segment-btn" data-ts-level="media">Educación Media</button>
+            <button type="button" class="segment-btn" data-ts-level="posgrado">Posgrado</button>
+          </div>
+        </div>
+
+        <div id="b5-ts-legend" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px;">
+          <!-- Leyenda y KPIs del periodo inyectados por JS -->
+        </div>
+
+        <div id="b5-ts-chart-wrap" style="position: relative; width: 100%; overflow-x: auto; padding-bottom: 6px;">
+          <!-- Gráfica SVG de serie de tiempo inyectada por JS -->
+        </div>
+
+        <div id="b5-ts-detail" style="margin-top: 16px; padding: 14px 20px; border-radius: 16px; background: rgba(22, 48, 114, 0.035); border: 1px solid rgba(22, 48, 114, 0.08); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+          <!-- Detalle interactivo del año seleccionado / más reciente -->
+        </div>
+        <p id="b5-footnote" class="chart-footnote" hidden></p>
+      </article>
     </section>
 
     <!-- BLOQUE 06 -->

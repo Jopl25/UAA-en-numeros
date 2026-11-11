@@ -1521,26 +1521,96 @@ fetchSheetData('05_Egresados').then(data => {
     
     let textosInterfase = {};
     let nivelesEgresados = [];
+    let aniosSerie = [];
+    let seriesPorNivel = [];
 
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
         if (!row || row.length === 0) continue;
 
-        // Textos de configuración (Col G, H e I)
-        const keyTexto = (row[6] || '').trim();
-        if (keyTexto) {
-        textosInterfase[keyTexto] = { 
-            h: (row[7] || '').trim(),
-            i: (row[8] || '').trim() // Capturamos la columna I
-        };
+        // Textos de configuración: ahora en Col D, E y F (índices 3, 4 y 5),
+        // manteniendo respaldo por si estuvieran en G, H, I
+        const colD = (row[3] || '').trim();
+        const colG = (row[6] || '').trim();
+        if (colD) {
+            textosInterfase[colD] = {
+                h: (row[4] || '').trim(),
+                i: (row[5] || '').trim()
+            };
+        } else if (colG && !colG.toLowerCase().includes('nivel')) {
+            textosInterfase[colG] = {
+                h: (row[7] || '').trim(),
+                i: (row[8] || '').trim()
+            };
         }
 
-        // Datos de la tabla (Col A y B/C)
+        // Datos de la tabla resumen (Col A y B)
         let nivelTexto = (row[0] || '').trim();
-        let egresadosVal = cleanNum(row[1]) || cleanNum(row[2]); 
+        let egresadosVal = cleanNum(row[1]);
 
         if (nivelTexto && !nivelTexto.toLowerCase().includes('nivel') && egresadosVal > 0) {
-        nivelesEgresados.push({ nombre: nivelTexto, valor: egresadosVal });
+            nivelesEgresados.push({ nombre: nivelTexto, valor: egresadosVal });
+        }
+
+        // Serie de tiempo histórica en columnas H:Y (índices 7 a 24)
+        const celdaH = (row[7] || '').trim();
+        if (i === 0 && celdaH) {
+            // Detectar si gviz fusionó fila 1 (años) y fila 2 (Educación Media) o si vienen separadas
+            const fila1Anios = [];
+            const fila2Valores = [];
+            let fusionado = false;
+
+            for (let col = 8; col <= 24; col++) {
+                const celda = String(row[col] ?? '').trim();
+                if (!celda) continue;
+                const partes = celda.split(/\s+/);
+                if (partes.length >= 2 && /^(19|20)\d{2}$/.test(partes[0])) {
+                    fusionado = true;
+                    fila1Anios.push(partes[0]);
+                    fila2Valores.push(cleanNum(partes.slice(1).join('')));
+                } else if (/^(19|20)\d{2}$/.test(celda)) {
+                    fila1Anios.push(celda);
+                }
+            }
+
+            if (fila1Anios.length > 0) {
+                aniosSerie = fila1Anios;
+                if (fusionado && fila2Valores.length === fila1Anios.length) {
+                    const nombreNiv = celdaH.replace(/^Nivel\s*Educativo\s*/i, '').trim() || 'Educación Media';
+                    seriesPorNivel.push({ nombre: nombreNiv, valores: fila2Valores });
+                }
+            }
+        } else if (celdaH && !/^Nivel\s*Educativo$/i.test(celdaH) && aniosSerie.length > 0) {
+            const valoresFila = [];
+            for (let k = 0; k < aniosSerie.length; k++) {
+                valoresFila.push(cleanNum(row[8 + k]));
+            }
+            if (valoresFila.some(v => v > 0)) {
+                seriesPorNivel.push({ nombre: celdaH, valores: valoresFila });
+            }
+        }
+    }
+
+    // Respaldo si gviz fusionó PRIMERA LÍNEA y LÍNEA PRINCIPAL en D1:F2
+    if (!textosInterfase['PRIMERA LÍNEA']) {
+        const keyFus = Object.keys(textosInterfase).find(k => k.includes('PRIMERA LÍNEA') && k.includes('LÍNEA PRINCIPAL'));
+        if (keyFus && data[0]) {
+            const valE = (data[0][4] || '').trim();
+            textosInterfase['PRIMERA LÍNEA'] = { h: 'EGRESADOS', i: '' };
+            textosInterfase['LÍNEA PRINCIPAL'] = { h: valE.replace(/^EGRESADOS\s*/i, '').trim() || 'Impacto Histórico', i: '' };
+        }
+    }
+    // Respaldo si gviz fusionó fila 1 y 2 en A1:B2
+    if (nivelesEgresados.length === 2 && data[0]) {
+        const rawA = (data[0][0] || '').trim();
+        const rawB = (data[0][1] || '').trim();
+        if (/^Nivel\s+Educativo\s+\S+/i.test(rawA)) {
+            const nomA = rawA.replace(/^Nivel\s+Educativo\s+/i, '').trim();
+            const numsB = rawB.match(/\d[\d,.]*/g);
+            const valB = numsB ? cleanNum(numsB[numsB.length - 1]) : 0;
+            if (nomA && valB > 0) {
+                nivelesEgresados.unshift({ nombre: nomA, valor: valB });
+            }
         }
     }
 
@@ -1639,6 +1709,266 @@ fetchSheetData('05_Egresados').then(data => {
         </div>
     `;
     setSafeHTML(document.getElementById('b5-donut-container'), htmlDonutFull);
+
+    // 4. Serie de Tiempo Histórica por Nivel Educativo (Columnas H:Y)
+    const tsCard = document.getElementById('b5-timeseries-card');
+    const tsChartWrap = document.getElementById('b5-ts-chart-wrap');
+    const tsLegend = document.getElementById('b5-ts-legend');
+    const tsDetail = document.getElementById('b5-ts-detail');
+    const tsTitle = document.getElementById('b5-ts-title');
+    const tsFilterBtns = document.querySelectorAll('#b5-ts-filter .segment-btn');
+
+    if (tsCard && tsChartWrap && aniosSerie.length > 0 && seriesPorNivel.length > 0) {
+        tsCard.style.display = '';
+        const anioIni = aniosSerie[0];
+        const anioFin = aniosSerie[aniosSerie.length - 1];
+        if (tsTitle) {
+            tsTitle.textContent = `Evolución Histórica de Egresados (${anioIni} – ${anioFin})`;
+        }
+
+        const clasificarSerie = (nombre) => {
+            const n = nombre.toLowerCase();
+            if (n.includes('licenciatura')) return { id: 'licenciatura', label: nombre, hex: '#163072', fill: 'rgba(22, 48, 114, 0.14)' };
+            if (n.includes('media') || n.includes('bachillerato')) return { id: 'media', label: nombre, hex: '#156082', fill: 'rgba(21, 96, 130, 0.14)' };
+            return { id: 'posgrado', label: nombre, hex: '#BE0068', fill: 'rgba(190, 0, 104, 0.14)' };
+        };
+
+        const seriesMeta = seriesPorNivel.map(s => ({
+            ...s,
+            ...clasificarSerie(s.nombre)
+        }));
+
+        // Orden visual consistente: Licenciatura, Educación Media, Posgrado
+        const ordenPrioridad = { licenciatura: 1, media: 2, posgrado: 3 };
+        seriesMeta.sort((a, b) => (ordenPrioridad[a.id] || 9) - (ordenPrioridad[b.id] || 9));
+
+        let filtroActivo = 'todos';
+        let indiceAnioSeleccionado = aniosSerie.length - 1;
+
+        const construirCurvaSuave = (pts) => {
+            if (pts.length === 0) return '';
+            if (pts.length === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+            let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+            for (let i = 0; i < pts.length - 1; i++) {
+                const p0 = pts[i === 0 ? 0 : i - 1];
+                const p1 = pts[i];
+                const p2 = pts[i + 1];
+                const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+                const cp1x = p1.x + (p2.x - p0.x) / 6;
+                const cp1y = p1.y + (p2.y - p0.y) / 6;
+                const cp2x = p2.x - (p3.x - p1.x) / 6;
+                const cp2y = p2.y - (p3.y - p1.y) / 6;
+                d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+            }
+            return d;
+        };
+
+        const actualizarDetalleAnio = (idx, activas) => {
+            if (!tsDetail) return;
+            const anio = aniosSerie[idx];
+            const totalAnio = activas.reduce((acc, s) => acc + (s.valores[idx] || 0), 0);
+            const badges = activas.map(s => {
+                const val = s.valores[idx] || 0;
+                const pct = totalAnio > 0 ? ((val / totalAnio) * 100).toFixed(1) : '0.0';
+                return `
+                    <div style="display: flex; align-items: center; gap: 10px; background: #fff; padding: 8px 14px; border-radius: 12px; border: 1px solid rgba(22,48,114,0.08); box-shadow: 0 2px 6px rgba(22,48,114,0.04);">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: ${s.hex}; flex-shrink: 0;"></span>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-secondary); font-weight: 600;">${escapeHTML(s.label)}</div>
+                            <div style="font-size: 15px; font-weight: 800; color: var(--uaa-navy);">
+                                ${val.toLocaleString('es-MX')}
+                                ${activas.length > 1 ? `<span style="font-size: 11px; font-weight: 600; color: var(--text-muted); margin-left: 4px;">(${pct}%)</span>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+
+            const htmlDetalle = `
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="background: var(--uaa-navy); color: #fff; padding: 8px 16px; border-radius: 12px; text-align: center;">
+                        <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.85;">Año consultado</div>
+                        <div style="font-size: 20px; font-weight: 800; line-height: 1.1;">${escapeHTML(anio)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;">
+                            ${activas.length > 1 ? 'Total de egresados en el año' : `Egresados de ${escapeHTML(activas[0].label)}`}
+                        </div>
+                        <div style="font-size: 24px; font-weight: 800; color: var(--uaa-navy); line-height: 1.1;">
+                            ${totalAnio.toLocaleString('es-MX')} <span style="font-size: 12px; font-weight: 600; color: var(--text-muted);">egresados</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    ${badges}
+                </div>
+            `;
+            setSafeHTML(tsDetail, htmlDetalle);
+        };
+
+        const renderSerieTiempo = () => {
+            const activas = filtroActivo === 'todos'
+                ? seriesMeta
+                : seriesMeta.filter(s => s.id === filtroActivo);
+
+            if (!activas.length) return;
+
+            // Leyenda + acumulado del periodo
+            if (tsLegend) {
+                const itemsLeyenda = activas.map(s => {
+                    const sumaSerie = s.valores.reduce((a, b) => a + b, 0);
+                    return `
+                        <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; background: rgba(255,255,255,0.75); border: 1px solid rgba(22,48,114,0.08); font-size: 12.5px;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: ${s.hex};"></span>
+                            <span style="font-weight: 600; color: var(--text-primary);">${escapeHTML(s.label)}:</span>
+                            <strong style="color: var(--uaa-navy);">${sumaSerie.toLocaleString('es-MX')}</strong>
+                            <span style="font-size: 11px; color: var(--text-muted);">(${anioIni}–${anioFin})</span>
+                        </div>`;
+                }).join('');
+
+                setSafeHTML(tsLegend, `
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">${itemsLeyenda}</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Pasa el cursor o haz clic sobre cualquier año para inspeccionar el desglose</div>
+                `);
+            }
+
+            // Dimensiones SVG
+            const W = 960;
+            const H = 310;
+            const padL = 56;
+            const padR = 26;
+            const padT = 24;
+            const padB = 42;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
+            const todosValores = activas.flatMap(s => s.valores);
+            const rawMax = Math.max(...todosValores, 10);
+            const magnitud = Math.pow(10, Math.floor(Math.log10(rawMax)));
+            const pasoGrid = Math.ceil((rawMax / 4) / (magnitud / 2)) * (magnitud / 2) || 500;
+            const maxY = pasoGrid * 4;
+
+            const xCoord = (i) => aniosSerie.length > 1
+                ? padL + (i / (aniosSerie.length - 1)) * plotW
+                : padL + plotW / 2;
+            const yCoord = (v) => padT + plotH - (Math.min(v, maxY) / maxY) * plotH;
+
+            // Líneas horizontales de referencia
+            let gridHtml = '';
+            for (let g = 0; g <= 4; g++) {
+                const valG = g * pasoGrid;
+                const yG = yCoord(valG);
+                gridHtml += `
+                    <line x1="${padL}" y1="${yG.toFixed(1)}" x2="${W - padR}" y2="${yG.toFixed(1)}" stroke="rgba(22, 48, 114, 0.08)" stroke-dasharray="${g === 0 ? 'none' : '4 4'}" stroke-width="1"></line>
+                    <text x="${padL - 10}" y="${(yG + 4).toFixed(1)}" text-anchor="end" fill="#64748B" font-size="11" font-weight="600">${valG.toLocaleString('es-MX')}</text>
+                `;
+            }
+
+            // Líneas y sombreado por serie
+            let areasHtml = '';
+            let linesHtml = '';
+            let dotsHtml = '';
+
+            activas.forEach((s) => {
+                const pts = s.valores.map((v, idx) => ({ x: xCoord(idx), y: yCoord(v), v, idx }));
+                const pathLine = construirCurvaSuave(pts);
+                const pathArea = `${pathLine} L ${pts[pts.length - 1].x.toFixed(1)} ${(padT + plotH).toFixed(1)} L ${pts[0].x.toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
+
+                areasHtml += `<path d="${pathArea}" fill="${s.hex}" fill-opacity="${activas.length === 1 ? '0.16' : '0.09'}"></path>`;
+                linesHtml += `<path d="${pathLine}" fill="none" stroke="${s.hex}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>`;
+
+                pts.forEach(p => {
+                    const esSeleccionado = p.idx === indiceAnioSeleccionado;
+                    dotsHtml += `
+                        <circle class="b5-ts-dot" data-year-idx="${p.idx}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${esSeleccionado ? '6' : '4'}" fill="#FFFFFF" stroke="${s.hex}" stroke-width="${esSeleccionado ? '3.2' : '2.4'}" style="transition: r 0.15s ease;"></circle>
+                    `;
+                });
+            });
+
+            // Línea guía vertical en el año activo + etiquetas del eje X + franjas interactivas
+            const xSel = xCoord(indiceAnioSeleccionado);
+            let xAxisHtml = '';
+            let hitAreasHtml = '';
+            const stepW = aniosSerie.length > 1 ? plotW / (aniosSerie.length - 1) : plotW;
+
+            aniosSerie.forEach((anio, idx) => {
+                const x = xCoord(idx);
+                const activo = idx === indiceAnioSeleccionado;
+                xAxisHtml += `
+                    <text class="b5-ts-xlabel" data-year-idx="${idx}" x="${x.toFixed(1)}" y="${H - 12}" text-anchor="middle" fill="${activo ? '#163072' : '#64748B'}" font-size="${activo ? '12' : '11'}" font-weight="${activo ? '800' : '600'}" style="cursor: pointer;">${escapeHTML(anio)}</text>
+                `;
+                const hitX = Math.max(padL, x - stepW / 2);
+                const hitW = Math.min(stepW, W - padR - hitX);
+                hitAreasHtml += `
+                    <rect class="b5-ts-hit" data-year-idx="${idx}" x="${hitX.toFixed(1)}" y="${padT}" width="${Math.max(12, hitW).toFixed(1)}" height="${plotH + padB}" fill="transparent" style="cursor: pointer;"></rect>
+                `;
+            });
+
+            const svgHtml = `
+                <svg viewBox="0 0 ${W} ${H}" style="width: 100%; min-width: 640px; height: auto; display: block; user-select: none;">
+                    ${gridHtml}
+                    <line class="b5-ts-guide" x1="${xSel.toFixed(1)}" y1="${padT}" x2="${xSel.toFixed(1)}" y2="${padT + plotH}" stroke="rgba(22, 48, 114, 0.28)" stroke-width="1.5" stroke-dasharray="3 3"></line>
+                    ${areasHtml}
+                    ${linesHtml}
+                    ${dotsHtml}
+                    ${xAxisHtml}
+                    ${hitAreasHtml}
+                </svg>
+            `;
+
+            setSafeHTML(tsChartWrap, svgHtml);
+            actualizarDetalleAnio(indiceAnioSeleccionado, activas);
+
+            const seleccionarAnio = (nuevoIdx) => {
+                if (nuevoIdx === indiceAnioSeleccionado || nuevoIdx < 0 || nuevoIdx >= aniosSerie.length) return;
+                indiceAnioSeleccionado = nuevoIdx;
+                const nuevaX = xCoord(indiceAnioSeleccionado);
+                const guide = tsChartWrap.querySelector('.b5-ts-guide');
+                if (guide) {
+                    guide.setAttribute('x1', nuevaX.toFixed(1));
+                    guide.setAttribute('x2', nuevaX.toFixed(1));
+                }
+                tsChartWrap.querySelectorAll('.b5-ts-dot').forEach(dot => {
+                    const esSel = Number(dot.getAttribute('data-year-idx')) === indiceAnioSeleccionado;
+                    dot.setAttribute('r', esSel ? '6' : '4');
+                    dot.setAttribute('stroke-width', esSel ? '3.2' : '2.4');
+                });
+                tsChartWrap.querySelectorAll('.b5-ts-xlabel').forEach(lbl => {
+                    const esSel = Number(lbl.getAttribute('data-year-idx')) === indiceAnioSeleccionado;
+                    lbl.setAttribute('fill', esSel ? '#163072' : '#64748B');
+                    lbl.setAttribute('font-weight', esSel ? '800' : '600');
+                    lbl.setAttribute('font-size', esSel ? '12' : '11');
+                });
+                actualizarDetalleAnio(indiceAnioSeleccionado, activas);
+            };
+
+            tsChartWrap.querySelectorAll('.b5-ts-hit').forEach(rect => {
+                const idx = Number(rect.getAttribute('data-year-idx'));
+                rect.addEventListener('mouseenter', () => seleccionarAnio(idx));
+                rect.addEventListener('click', () => seleccionarAnio(idx));
+            });
+        };
+
+        tsFilterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filtroActivo = btn.getAttribute('data-ts-level') || 'todos';
+                tsFilterBtns.forEach(b => b.classList.toggle('active', b === btn));
+                renderSerieTiempo();
+            });
+        });
+
+        renderSerieTiempo();
+    }
+
+    // 5. Nota de Fecha de Corte debajo del gráfico de Egresados (lee FECHA DE CORTE de la hoja)
+    const b5Footnote = document.getElementById('b5-footnote');
+    const fechaCorteB5 = textosInterfase['FECHA DE CORTE']?.h || '';
+    if (b5Footnote && fechaCorteB5) {
+        b5Footnote.replaceChildren();
+        const etiquetaNota = document.createElement('strong');
+        etiquetaNota.textContent = 'Nota: ';
+        b5Footnote.append(etiquetaNota, document.createTextNode(`Corte al ${fechaCorteB5.toLowerCase()}.`));
+        b5Footnote.hidden = false;
+    }
 
     // =========================================================================
     // DETONADOR DE ANIMACIONES

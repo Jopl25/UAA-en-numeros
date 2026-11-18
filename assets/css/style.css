@@ -3690,6 +3690,505 @@ a.email-link:hover {
     transform: translateY(-2px);
 }
 
+/* Columna izquierda apilada (tarjetas 2 y 3 de Bloque 15) */
+.b15-left-stack {
+    grid-column: span 6;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(20px, 2vw, 24px);
+}
+
+.b15-left-stack > .card {
+    flex: 1;
+}
+
+@media (max-width: 900px) {
+    .b15-left-stack {
+        grid-column: span 12;
+    }
+}
+
+.b15-cta-btn--sm {
+    padding: 9px 18px;
+    font-size: 13px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+/* Gráfico tipo dona por nivel en tarjeta de egresados (Bloque 15) */
+.b15-egr-niveles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.b15-t1-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+}
+
+.b15-egr-donut-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 18px 24px 10px;
+}
+
+.b15-egr-donut-wrap .donut-wrapper {
+    width: 196px;
+    height: 196px;
+}
+
+.b15-egr-donut-wrap .donut-center-total {
+    font-size: 24px;
+}
+
+.b15-modal-note {
+    padding: 10px clamp(16px, 3vw, 32px);
+    background: rgba(22, 48, 114, 0.045);
+    border-bottom: 1px solid rgba(22, 48, 114, 0.08);
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.b15-modal-note strong {
+    color: var(--uaa-navy);
+}
+
+/* Modal Camino Histórico de Incorporación */
+.b15-trayectoria-body {
+    padding: clamp(16px, 2.5vw, 28px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    max-height: calc(85vh - 90px);
+}
+
+.b15-trayectoria-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+}
+
+.b15-trayectoria-kpi {
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(22, 48, 114, 0.08);
+}
+
+.b15-trayectoria-kpi span {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+
+.b15-trayectoria-kpi strong {
+    display: block;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--uaa-navy);
+    margin-top: 2px;
+}
+
+.b15-trayectoria-chart-box {
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(22, 48, 114, 0.08);
+}
+
+.b15-trayectoria-chart-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.b15-trayectoria-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.b15-trayectoria-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.b15-trayectoria-legend i {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.b15-trayectoria-year-detail {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(22, 48, 114, 0.04);
+    border: 1px solid rgba(22, 48, 114, 0.08);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.b15-trayectoria-timeline {
+    position: relative;
+    padding-left: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.b15-trayectoria-timeline::before {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: rgba(22, 48, 114, 0.16);
+}
+
+.b15-tr-step {
+    position: relative;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(22, 48, 114, 0.08);
+}
+
+.b15-tr-step::before {
+    content: "";
+    position: absolute;
+    left: -21px;
+    top: 16px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--uaa-navy);
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 2px rgba(22, 48, 114, 0.18);
+}
+
+.b15-tr-step-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.b15-tr-year {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--uaa-navy);
+}
+
+.b15-tr-net {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--uaa-teal);
+    background: rgba(21, 96, 130, 0.1);
+    padding: 3px 10px;
+    border-radius: 999px;
+}
+
+.b15-tr-events {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.b15-tr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.b15-tr-chip--in {
+    background: rgba(15, 118, 110, 0.11);
+    color: #0f766e;
+}
+
+.b15-tr-chip--out {
+    background: rgba(190, 0, 104, 0.1);
+    color: #be0068;
+}
+
+.b15-egr-legend {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.b15-egr-nivel-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 11px;
+    background: rgba(22, 48, 114, 0.035);
+    border: 1px solid rgba(22, 48, 114, 0.07);
+    font-size: 12.5px;
+}
+
+.b15-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.b15-status-badge--active {
+    color: #0f766e;
+    background: rgba(15, 118, 110, 0.12);
+}
+
+.b15-status-badge--ended {
+    color: #64748b;
+    background: rgba(100, 116, 139, 0.14);
+}
+
+.b15-egr-nivel-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.b15-egr-nivel-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.b15-egr-nivel-val {
+    font-weight: 800;
+    color: var(--uaa-navy);
+    white-space: nowrap;
+}
+
+.b15-ts-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(22, 48, 114, 0.08);
+}
+
+/* Modal desglose de egresados (Bloque 15) */
+.b15-modal-controls {
+    padding: 14px clamp(16px, 3vw, 32px);
+    background: rgba(255, 255, 255, 0.45);
+    border-bottom: 1px solid rgba(22, 48, 114, 0.08);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.b15-modal-right-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.b15-modal-search {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(22, 48, 114, 0.16);
+    background: rgba(255, 255, 255, 0.85);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    min-width: 200px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.b15-modal-search:focus {
+    border-color: var(--uaa-teal);
+    box-shadow: 0 0 0 3px rgba(21, 96, 130, 0.14);
+}
+
+.b15-level-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.b15-expand-btn {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(22, 48, 114, 0.18);
+    background: #ffffff;
+    color: var(--uaa-navy);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.b15-expand-btn.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+#b15-modal-filters .segment-btn {
+    text-decoration: none;
+}
+
+.b15-expand-btn:hover,
+.b15-expand-btn.active {
+    background: var(--uaa-navy);
+    color: #ffffff;
+    border-color: var(--uaa-navy);
+}
+
+.b15-school-years-row td {
+    background: rgba(22, 48, 114, 0.025);
+    padding: 12px 18px !important;
+}
+
+.b15-school-years-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+}
+
+.b15-year-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid rgba(22, 48, 114, 0.08);
+}
+
+.b15-year-chip span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.b15-year-chip strong {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: var(--uaa-navy);
+}
+
+#modalB15Egresados .matricula-modal-layout {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#modalB15Egresados .matricula-table-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    width: 100%;
+    overflow: auto;
+}
+
+#tablaB15Egresados:not(.is-matrix) th:first-child,
+#tablaB15Egresados:not(.is-matrix) td:first-child {
+    width: 1%;
+    white-space: nowrap;
+}
+
+#tablaB15Egresados:not(.is-matrix) th:nth-child(2),
+#tablaB15Egresados:not(.is-matrix) td:nth-child(2) {
+    width: auto;
+    white-space: normal;
+}
+
+#tablaB15Egresados.is-matrix {
+    width: max-content;
+    min-width: 100%;
+}
+
+#tablaB15Egresados.is-matrix th,
+#tablaB15Egresados.is-matrix td {
+    white-space: nowrap;
+    font-size: 12.5px;
+    padding: 8px 14px;
+    width: auto;
+    min-width: 130px;
+}
+
+#tablaB15Egresados.is-matrix th:first-child,
+#tablaB15Egresados.is-matrix td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    width: 112px;
+    min-width: 112px;
+    max-width: 112px;
+    text-align: center;
+    background: rgba(248, 250, 252, 0.98);
+    font-weight: 800;
+    color: var(--uaa-navy);
+}
+
+#tablaB15Egresados.is-matrix th:nth-child(2),
+#tablaB15Egresados.is-matrix td:nth-child(2) {
+    width: 100px;
+    min-width: 96px;
+}
+
+#tablaB15Egresados.is-matrix thead th:first-child {
+    z-index: 4;
+    background: #eef2f8;
+}
+
 
 /* Preguntas sugeridas del chatbot */
 .chatbot-suggestions {

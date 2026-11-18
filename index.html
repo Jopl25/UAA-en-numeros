@@ -370,7 +370,7 @@
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
               <img src="https://www.gapes.ciees.edu.mx/imgs/ciees_new.png" alt="Logo CIEES"
                 style="height: 48px; object-fit: contain;">
-              <img src="https://www.comaem.org.mx/wp-content/uploads/2021/09/logofooter.png" alt="Logo COPAES"
+              <img src="https://comace.mx/Imagenes/logo_comace2018.png" alt="Logo COPAES"
                 style="height: 36px; object-fit: contain;">
             </div>
           </div>
@@ -1749,59 +1749,67 @@
           <div class="b15-tl-labels">
             <div class="b15-tl-label">
               <span class="b15-tl-year" id="b15-anio">----</span>
-              <span class="b15-tl-text">Se incorpora el primer bachillerato</span>
+              <span class="b15-tl-text">Incorporación del primer bachillerato</span>
             </div>
             <div class="b15-tl-label b15-tl-label--end">
               <span class="b15-tl-year" id="b15-anio-actual">----</span>
               <span class="b15-tl-text"><strong id="b15-total-tl">0</strong> escuelas incorporadas acumuladas a la fecha</span>
             </div>
           </div>
+          <div class="b15-t1-actions">
+            <button type="button" id="open-modal-b15-trayectoria" class="b15-cta-btn b15-cta-btn--sm">
+              Ver camino histórico de incorporación &#8599;
+            </button>
+          </div>
         </div>
       </article>
 
-      <!-- Escuelas con plan de estudios -->
-      <article class="card card-4 flex-col-between reveal">
-        <div>
-          <div class="flex-row-start">
-            <div class="icon-box icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-              </svg></div>
-            <h3 class="card-title md" id="b15-t2-tag">...</h3>
+      <!-- Columna izquierda apilada: Plan de estudios (2) + Profesores (3) -->
+      <div class="b15-left-stack">
+        <!-- Escuelas con plan de estudios -->
+        <article class="card flex-col-between reveal">
+          <div>
+            <div class="flex-row-start">
+              <div class="icon-box icon-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg></div>
+              <h3 class="card-title md" id="b15-t2-tag">...</h3>
+            </div>
+            <div class="metric-md counter" id="b15-plan-num" data-target="0" style="font-size: 36px; margin-bottom: 8px;">0
+            </div>
+            <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
+            <p class="metric-subtext"><strong id="b15-plan-de">0 de 0</strong> escuelas incorporadas, es decir, el
+              <strong id="b15-plan-pct-txt">0%</strong> del total.</p>
           </div>
-          <div class="metric-md counter" id="b15-plan-num" data-target="0" style="font-size: 36px; margin-bottom: 8px;">0
-          </div>
-          <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
-          <p class="metric-subtext"><strong id="b15-plan-de">0 de 0</strong> escuelas incorporadas, es decir, el
-            <strong id="b15-plan-pct-txt">0%</strong> del total.</p>
-        </div>
-        <!-- Una figura por escuela: rellena = trabaja con plan de estudios -->
-        <div class="b15-schools" id="b15-schools" role="img" aria-label=""></div>
-      </article>
+          <!-- Una figura por escuela: rellena = trabaja con plan de estudios -->
+          <div class="b15-schools" id="b15-schools" role="img" aria-label=""></div>
+        </article>
 
-      <!-- Profesores involucrados -->
-      <article class="card card-4 flex-col-between reveal">
-        <div>
-          <div class="flex-row-start">
-            <div class="icon-box icon-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg></div>
-            <h3 class="card-title md" id="b15-t3-tag">...</h3>
+        <!-- Profesores involucrados -->
+        <article class="card flex-col-between reveal">
+          <div>
+            <div class="flex-row-start">
+              <div class="icon-box icon-navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg></div>
+              <h3 class="card-title md" id="b15-t3-tag">...</h3>
+            </div>
+            <div class="metric-md counter" id="b15-prof-num" data-target="0" style="font-size: 36px; margin-bottom: 8px;">0
+            </div>
+            <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
+            <p class="metric-subtext" id="b15-t3-desc">...</p>
           </div>
-          <div class="metric-md counter" id="b15-prof-num" data-target="0" style="font-size: 36px; margin-bottom: 8px;">0
-          </div>
-          <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
-          <p class="metric-subtext" id="b15-t3-desc">...</p>
-        </div>
-      </article>
+        </article>
+      </div>
 
-      <!-- Estudiantes egresados -->
-      <article class="card card-4 flex-col-between reveal">
+      <!-- Estudiantes egresados (columna derecha completa) -->
+      <article class="card card-6 flex-col-between reveal">
         <div>
           <div class="flex-row-start">
             <div class="icon-box icon-magenta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1816,6 +1824,46 @@
           </div>
           <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
           <p class="metric-subtext" id="b15-t4-desc">...</p>
+          <div class="b15-egr-niveles" id="b15-egr-niveles"></div>
+        </div>
+        <button type="button" id="open-modal-b15-egresados-card" class="block-action-link"
+          style="background:none; border-left:none; border-right:none; border-bottom:none; width:100%; text-align:left; cursor:pointer; font-family:inherit;">
+          Ver desglose por escuela y nivel &#8599;
+        </button>
+      </article>
+
+      <!-- Línea de tiempo de egresados por nivel educativo (Escuelas Incorporadas) -->
+      <article class="card card-12 reveal" id="b15-timeseries-card" style="display: none;">
+        <div class="flex-row-between" style="flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 24px;">
+          <div>
+            <div class="card-section-tag" id="b15-ts-tag" style="margin-bottom: 4px;">Evolución Anual • Año de Egreso</div>
+            <h3 class="card-title xl" id="b15-ts-title">Histórico de Egresados por Nivel Educativo</h3>
+          </div>
+          <div class="segmented-control" id="b15-ts-filter" role="group" aria-label="Filtrar serie histórica por nivel educativo">
+            <button type="button" class="segment-btn active" data-ts-level="todos">Todos los niveles</button>
+            <button type="button" class="segment-btn" data-ts-level="bachillerato">Bachillerato</button>
+            <button type="button" class="segment-btn" data-ts-level="secundaria">Secundaria</button>
+            <button type="button" class="segment-btn" data-ts-level="tecnico">Técnico</button>
+          </div>
+        </div>
+
+        <div id="b15-ts-legend" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px;">
+          <!-- Leyenda y KPIs del periodo inyectados por JS -->
+        </div>
+
+        <div id="b15-ts-chart-wrap" style="position: relative; width: 100%; overflow-x: auto; padding-bottom: 6px;">
+          <!-- Gráfica SVG de serie de tiempo inyectada por JS -->
+        </div>
+
+        <div id="b15-ts-detail" style="margin-top: 16px; padding: 14px 20px; border-radius: 16px; background: rgba(22, 48, 114, 0.035); border: 1px solid rgba(22, 48, 114, 0.08); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;">
+          <!-- Detalle interactivo del año seleccionado / más reciente -->
+        </div>
+
+        <div class="b15-ts-footer">
+          <span class="metric-subtext" style="margin: 0; font-size: 13px;">Consulta el detalle histórico de cada institución incorporada en los tres niveles educativos.</span>
+          <button type="button" id="open-modal-b15-egresados" class="b15-cta-btn b15-cta-btn--sm">
+            Ver desglose por escuela y nivel &#8599;
+          </button>
         </div>
       </article>
 
@@ -2083,6 +2131,74 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DESGLOSE EGRESADOS ESCUELAS INCORPORADAS (BLOQUE 15) -->
+  <div class="glass-modal-overlay" id="modalB15Egresados">
+    <div class="glass-modal" style="max-width: 1140px;">
+      <div class="modal-header">
+        <div>
+          <div class="card-section-tag" style="margin-bottom: 2px;">Escuelas Incorporadas • Desglose Histórico</div>
+          <h2 class="modal-title">Egresados por Escuela y Nivel Educativo</h2>
+        </div>
+        <button id="close-modal-b15-egresados" class="close-btn" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="b15-modal-controls">
+        <div id="b15-modal-filters" style="display: flex; flex-wrap: wrap; gap: 8px;" role="group" aria-label="Filtrar por nivel educativo">
+          <!-- Botones de filtro inyectados por JS -->
+        </div>
+        <div class="b15-modal-right-controls">
+          <input type="search" id="b15-modal-search" class="b15-modal-search" placeholder="Buscar escuela..." aria-label="Buscar escuela incorporada">
+          <div class="segmented-control" id="b15-modal-view-toggle" role="group" aria-label="Cambiar vista del desglose">
+            <button type="button" class="segment-btn active" data-b15-view="escuelas">Por escuela</button>
+            <button type="button" class="segment-btn" data-b15-view="matriz">Matriz por año</button>
+          </div>
+        </div>
+      </div>
+      <div class="b15-modal-note">
+        <strong>Nota:</strong> Los egresados mostrados contemplan únicamente el periodo de 1985 a la actualidad. Si se requiere información sobre periodos anteriores, favor de contactar al <strong>Departamento de Estadística Institucional</strong>.
+      </div>
+      <div class="matricula-modal-layout">
+        <div class="modal-body matricula-table-scroll">
+          <table class="glass-table" id="tablaB15Egresados">
+            <thead id="b15-modal-thead"></thead>
+            <tbody id="b15-modal-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CAMINO HISTÓRICO DE INCORPORACIÓN (BLOQUE 15) -->
+  <div class="glass-modal-overlay" id="modalB15Trayectoria">
+    <div class="glass-modal" style="max-width: 1080px;">
+      <div class="modal-header">
+        <div>
+          <div class="card-section-tag" style="margin-bottom: 2px;">Escuelas Incorporadas • Evolución Histórica</div>
+          <h2 class="modal-title">Camino Histórico de Incorporación de Instituciones</h2>
+        </div>
+        <button id="close-modal-b15-trayectoria" class="close-btn" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body b15-trayectoria-body">
+        <div class="b15-trayectoria-kpis" id="b15-trayectoria-kpis"></div>
+        <div class="b15-trayectoria-chart-box">
+          <div class="b15-trayectoria-chart-head">
+            <div>
+              <div class="card-section-tag" style="margin-bottom: 2px;">Evolución neta anual • Altas y Bajas</div>
+              <div style="font-size: 13px; color: var(--text-secondary);">Pasa el cursor o haz clic sobre cualquier año para ver las instituciones incorporadas y desincorporadas.</div>
+            </div>
+            <div class="b15-trayectoria-legend">
+              <span><i style="background:#163072;"></i> Escuelas activas</span>
+              <span><i style="background:#0f766e;"></i> Altas (+)</span>
+              <span><i style="background:#BE0068;"></i> Bajas (−)</span>
+            </div>
+          </div>
+          <div id="b15-trayectoria-svg-wrap" style="width: 100%; overflow-x: auto;"></div>
+          <div id="b15-trayectoria-year-detail" class="b15-trayectoria-year-detail"></div>
+        </div>
+        <div class="b15-trayectoria-timeline" id="b15-trayectoria-timeline"></div>
       </div>
     </div>
   </div>

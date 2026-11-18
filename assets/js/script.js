@@ -3069,7 +3069,7 @@ Promise.all([
     const ETIQUETAS_TEXTO = ['PRIMERA LINEA', 'LINEA PRINCIPAL', 'INTRODUCCION', 'FECHA DE CORTE'];
 
     let textos = {};   // Textos naranjas: { b: Columna B, c: Columna C }
-    let total = 0, conPlan = 0, profesores = 0, egresados = 0, anioInicio = 0;
+    let total = 0, conPlan = 0, incBachillerato = 0, incTecnico = 0, profesores = 0, egresados = 0, anioInicio = 0;
 
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
@@ -3087,6 +3087,8 @@ Promise.all([
 
         // Mapeo Datos numéricos (Col A = indicador, Col B = valor)
         if (clave.includes('TOTAL') && clave.includes('ESCUELAS')) total = cleanNum(valor);
+        else if (clave === 'BACHILLERATO') incBachillerato = cleanNum(valor);
+        else if (clave === 'TECNICO' || clave === 'NIVEL TECNICO') incTecnico = cleanNum(valor);
         else if (clave.includes('PLAN DE ESTUDIOS')) conPlan = cleanNum(valor);
         else if (clave.includes('PROFESORES')) profesores = cleanNum(valor);
         else if (clave.includes('EGRESADOS')) egresados = cleanNum(valor);
@@ -3129,24 +3131,49 @@ Promise.all([
         timeline.style.display = 'none';
     }
 
-    // 3. Tarjeta 2: escuelas con plan de estudios ("X de Y" + una figura por escuela)
+    // 3. Tarjeta 2: desglose de instituciones incorporadas por nivel (Bachillerato / Técnico)
     ponerTexto('b15-t2-tag', txt('TARJETA 2 PRIMERA LINEA'));
-    document.getElementById('b15-plan-num').setAttribute('data-target', conPlan);
-    document.getElementById('b15-plan-de').innerText = `${conPlan.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')}`;
-    const pctPlan = total > 0 ? Math.min((conPlan / total) * 100, 100) : 0;
-    const pctTexto = `${pctPlan.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
-    document.getElementById('b15-plan-pct-txt').innerText = pctTexto;
+    const bachCount = (incBachillerato + incTecnico > 0) ? incBachillerato : conPlan;
+    const tecCount = (incBachillerato + incTecnico > 0) ? incTecnico : 0;
+    const totalNiveles = total > 0 ? total : (bachCount + tecCount);
+
+    const bachNumEl = document.getElementById('b15-bach-num');
+    const tecNumEl = document.getElementById('b15-tec-num');
+    if (bachNumEl) bachNumEl.setAttribute('data-target', bachCount);
+    if (tecNumEl) tecNumEl.setAttribute('data-target', tecCount);
+
+    const fmtPct = (v) => totalNiveles > 0
+        ? `${((v / totalNiveles) * 100).toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
+        : '0.0%';
+    ponerTexto('b15-bach-pct', fmtPct(bachCount));
+    ponerTexto('b15-tec-pct', fmtPct(tecCount));
+
+    const t2DescEl = document.getElementById('b15-t2-desc');
+    if (t2DescEl) {
+        setSafeHTML(
+            t2DescEl,
+            `De las <strong>${totalNiveles.toLocaleString('es-MX')}</strong> instituciones incorporadas vigentes, <strong>${bachCount.toLocaleString('es-MX')}</strong> corresponden a Bachillerato y <strong>${tecCount.toLocaleString('es-MX')}</strong> a Técnico.`
+        );
+    }
 
     const escuelas = document.getElementById('b15-schools');
-    if (escuelas && total > 0 && total <= 120) {
+    if (escuelas && totalNiveles > 0 && totalNiveles <= 120) {
         const icono = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3 2 8v2h20V8L12 3z"></path><path d="M4 11v7H3v3h18v-3h-1v-7h-3v7h-2v-7h-2v7h-2v-7H9v7H7v-7H4z"></path></svg>';
         let html = '';
-        for (let i = 0; i < total; i++) {
-            const activa = i < conPlan ? ' b15-school--active' : '';
-            html += `<span class="b15-school${activa}" style="transition-delay: ${i * 30}ms;">${icono}</span>`;
+        for (let i = 0; i < totalNiveles; i++) {
+            let claseNivel = '';
+            let tituloNivel = 'Institución incorporada';
+            if (i < bachCount) {
+                claseNivel = ' b15-school--bachillerato';
+                tituloNivel = 'Bachillerato';
+            } else if (i < bachCount + tecCount) {
+                claseNivel = ' b15-school--tecnico';
+                tituloNivel = 'Técnico';
+            }
+            html += `<span class="b15-school${claseNivel}" title="${tituloNivel}" style="transition-delay: ${i * 30}ms;">${icono}</span>`;
         }
         setSafeHTML(escuelas, html);
-        escuelas.setAttribute('aria-label', `${conPlan} de ${total} escuelas incorporadas trabajan con plan de estudios`);
+        escuelas.setAttribute('aria-label', `${bachCount} instituciones de Bachillerato y ${tecCount} de nivel Técnico de un total de ${totalNiveles} incorporadas`);
     } else if (escuelas) {
         escuelas.style.display = 'none';
     }

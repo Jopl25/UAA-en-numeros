@@ -3642,6 +3642,63 @@ a.email-link:hover {
     color: var(--uaa-teal);
 }
 
+.b15-school--bachillerato {
+    color: var(--uaa-navy);
+}
+
+.b15-school--tecnico {
+    color: var(--uaa-magenta);
+}
+
+/* Tarjeta 2: KPIs por nivel (Bachillerato / Técnico) */
+.b15-niveles-resumen {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 6px;
+}
+
+.b15-nivel-kpi {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(22, 48, 114, 0.08);
+    border-left: 3px solid var(--uaa-navy);
+}
+
+.b15-nivel-kpi--tec {
+    border-left-color: var(--uaa-magenta);
+}
+
+.b15-nivel-kpi-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.b15-nivel-kpi-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.b15-nivel-kpi-num-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.b15-nivel-kpi-pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
 .b15-schools.is-visible .b15-school {
     opacity: 1;
     transform: none;

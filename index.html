@@ -1766,7 +1766,7 @@
 
       <!-- Columna izquierda apilada: Plan de estudios (2) + Profesores (3) -->
       <div class="b15-left-stack">
-        <!-- Escuelas con plan de estudios -->
+        <!-- Desglose de las Instituciones Incorporadas por Nivel -->
         <article class="card flex-col-between reveal">
           <div>
             <div class="flex-row-start">
@@ -1777,13 +1777,31 @@
                 </svg></div>
               <h3 class="card-title md" id="b15-t2-tag">...</h3>
             </div>
-            <div class="metric-md counter" id="b15-plan-num" data-target="0" style="font-size: 36px; margin-bottom: 8px;">0
+            <div class="b15-niveles-resumen">
+              <div class="b15-nivel-kpi b15-nivel-kpi--bach">
+                <div class="b15-nivel-kpi-head">
+                  <span class="b15-nivel-kpi-dot" style="background: var(--uaa-navy);"></span>
+                  <span>Bachillerato</span>
+                </div>
+                <div class="b15-nivel-kpi-num-row">
+                  <span class="metric-md counter" id="b15-bach-num" data-target="0" style="font-size: 32px;">0</span>
+                  <span class="b15-nivel-kpi-pct" id="b15-bach-pct">0%</span>
+                </div>
+              </div>
+              <div class="b15-nivel-kpi b15-nivel-kpi--tec">
+                <div class="b15-nivel-kpi-head">
+                  <span class="b15-nivel-kpi-dot" style="background: var(--uaa-magenta);"></span>
+                  <span>Técnico</span>
+                </div>
+                <div class="b15-nivel-kpi-num-row">
+                  <span class="metric-md counter" id="b15-tec-num" data-target="0" style="font-size: 32px;">0</span>
+                  <span class="b15-nivel-kpi-pct" id="b15-tec-pct">0%</span>
+                </div>
+              </div>
             </div>
-            <div class="hero-metric-bar-yellow" style="max-width: 100px; margin-bottom: 16px;"></div>
-            <p class="metric-subtext"><strong id="b15-plan-de">0 de 0</strong> escuelas incorporadas, es decir, el
-              <strong id="b15-plan-pct-txt">0%</strong> del total.</p>
+            <p class="metric-subtext" id="b15-t2-desc" style="margin-top: 12px;">...</p>
           </div>
-          <!-- Una figura por escuela: rellena = trabaja con plan de estudios -->
+          <!-- Una figura por institución: color por nivel (Bachillerato / Técnico) -->
           <div class="b15-schools" id="b15-schools" role="img" aria-label=""></div>
         </article>
 

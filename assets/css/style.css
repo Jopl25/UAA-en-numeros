@@ -2105,7 +2105,8 @@ body::before {
 }
 
 /* Reserva el espacio inferior izquierdo del asistente sin modificar el chatbot. */
-#modalCentros.glass-modal-overlay {
+#modalCentros.glass-modal-overlay,
+#modalEgresados.glass-modal-overlay {
     display: grid;
     grid-template-columns: 1fr minmax(0, 960px) 1fr;
     align-items: center;
@@ -2113,7 +2114,8 @@ body::before {
     box-sizing: border-box;
 }
 
-#modalCentros .glass-modal {
+#modalCentros .glass-modal,
+#modalEgresados .glass-modal {
     grid-column: 2;
     width: 100%;
     max-width: 960px;
@@ -2194,7 +2196,8 @@ body::before {
 }
 
 @media (max-width: 1000px) {
-    #modalCentros.glass-modal-overlay {
+    #modalCentros.glass-modal-overlay,
+    #modalEgresados.glass-modal-overlay {
         display: flex;
         justify-content: center;
         align-items: flex-start;
@@ -2205,7 +2208,8 @@ body::before {
         display: none;
     }
 
-    #modalCentros .glass-modal {
+    #modalCentros .glass-modal,
+    #modalEgresados .glass-modal {
         max-height: 76vh;
     }
 
@@ -2213,6 +2217,100 @@ body::before {
         width: 100%;
         max-height: calc(76vh - 90px);
     }
+}
+
+.egresados-modal-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px clamp(16px, 3vw, 32px);
+    background: rgba(255, 255, 255, 0.48);
+    border-bottom: 1px solid rgba(22, 48, 114, 0.08);
+}
+
+.egresados-modal-search {
+    flex: 1 1 280px;
+    max-width: 440px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(22, 48, 114, 0.16);
+    background: rgba(255, 255, 255, 0.9);
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--uaa-navy);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.egresados-modal-search:focus {
+    border-color: var(--uaa-teal);
+    box-shadow: 0 0 0 3px rgba(21, 96, 130, 0.14);
+}
+
+.egresados-modal-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+#modalEgresados .matricula-table-scroll {
+    max-height: calc(85vh - 150px);
+}
+
+#tablaEgresados th:first-child,
+#tablaEgresados td:first-child {
+    position: sticky;
+    left: 0;
+    min-width: 260px;
+    max-width: 340px;
+    z-index: 4;
+    box-shadow: 2px 0 8px rgba(22, 48, 114, 0.05);
+}
+
+#tablaEgresados thead th:first-child {
+    z-index: 12;
+    background: rgba(244, 245, 248, 0.98);
+}
+
+#tablaEgresados .row-level td:first-child {
+    background: #f5f7fb;
+}
+
+#tablaEgresados .row-center td:first-child {
+    background: #fafbfd;
+}
+
+#tablaEgresados .row-center:hover td:first-child,
+#tablaEgresados .row-center:focus td:first-child {
+    background: #eef2f8;
+}
+
+#tablaEgresados .row-career td:first-child {
+    background: #ffffff;
+}
+
+#tablaEgresados .col-total {
+    font-weight: 700;
+    color: var(--uaa-navy);
+}
+
+#tablaEgresados tfoot td {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    background: #e9eff8;
+    color: var(--uaa-navy);
+    font-weight: 800;
+    font-size: 13.5px;
+    border-top: 2px solid rgba(22, 48, 114, 0.2);
+    border-bottom: none;
+}
+
+#tablaEgresados tfoot td:first-child {
+    z-index: 12;
+    background: #e9eff8;
 }
 
 .glass-table {

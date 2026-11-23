@@ -663,6 +663,12 @@
         </div>
         <p id="b5-footnote" class="chart-footnote" hidden></p>
       </article>
+
+      <div class="matricula-action-wrapper reveal">
+        <button id="open-modal-egresados" type="button" class="block-action-link" style="background:none; border-top:none; border-left:none; border-right:none;">
+          Consultar Tabla de Egresados por Nivel, Centro Académico y Programa Educativo &#8599;
+        </button>
+      </div>
     </section>
 
     <!-- BLOQUE 06 -->
@@ -2102,6 +2108,7 @@
             <tbody>
               <!-- La tabla inicia vacía; JavaScript inyectará las filas aquí -->
             </tbody>
+            <tfoot></tfoot>
           </table>
         </div>
       </div>
@@ -2109,6 +2116,47 @@
     <img
       src="assets/img/indicacion-desplegar-carreras.png"
       alt="Da clic sobre el centro para desplegar el detalle por carrera"
+      class="matricula-modal-hint"
+    >
+  </div>
+
+  <!-- MODAL DESGLOSE EGRESADOS POR CARRERA (BLOQUE 05) -->
+  <div class="glass-modal-overlay" id="modalEgresados">
+    <div class="glass-modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Tabla de Egresados por Nivel, Centro Académico y Programa Educativo</h2>
+        <button id="close-modal-egresados" class="close-btn" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="egresados-modal-toolbar">
+        <input
+          type="search"
+          id="b5-modal-search"
+          class="egresados-modal-search"
+          placeholder="Buscar programa educativo (carrera), centro o nivel..."
+          aria-label="Buscar programa educativo, centro o nivel"
+        >
+        <span id="b5-modal-count" class="egresados-modal-count"></span>
+      </div>
+      <div class="matricula-modal-layout">
+        <div class="modal-body matricula-table-scroll">
+          <table class="glass-table" id="tablaEgresados">
+            <thead>
+              <tr>
+                <th>NIVEL, CENTRO ACADÉMICO Y PROGRAMA EDUCATIVO</th>
+                <th class="text-right">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- La tabla inicia vacía; JavaScript inyectará las filas aquí -->
+            </tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+    <img
+      src="assets/img/indicacion-desplegar-carreras.png"
+      alt="Da clic sobre el centro para desplegar el detalle por programa educativo"
       class="matricula-modal-hint"
     >
   </div>

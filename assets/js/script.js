@@ -372,6 +372,31 @@ if (modalCentros) {
     });
 }
 
+const modalEgresados = document.getElementById('modalEgresados');
+const botonAbrirModalEgresados = document.getElementById('open-modal-egresados');
+const botonCerrarModalEgresados = document.getElementById('close-modal-egresados');
+
+if (modalEgresados) {
+    if (botonAbrirModalEgresados) {
+        botonAbrirModalEgresados.addEventListener('click', () => {
+            modalEgresados.classList.add('open');
+            syncModalScrollLock();
+        });
+    }
+    if (botonCerrarModalEgresados) {
+        botonCerrarModalEgresados.addEventListener('click', () => {
+            modalEgresados.classList.remove('open');
+            syncModalScrollLock();
+        });
+    }
+    modalEgresados.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('open');
+            syncModalScrollLock();
+        }
+    });
+}
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const abiertos = document.querySelectorAll('.glass-modal-overlay.open');
@@ -1521,8 +1546,10 @@ fetchSheetData('05_Egresados').then(data => {
     
     let textosInterfase = {};
     let nivelesEgresados = [];
+    let aniosMeta = [];
     let aniosSerie = [];
-    let seriesPorNivel = [];
+    const mapaCarreras = new Map();
+    let headerCarrerasEncontrado = false;
 
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
@@ -1552,44 +1579,62 @@ fetchSheetData('05_Egresados').then(data => {
             nivelesEgresados.push({ nombre: nivelTexto, valor: egresadosVal });
         }
 
-        // Serie de tiempo histórica en columnas H:Y (índices 7 a 24)
-        const celdaH = (row[7] || '').trim();
-        if (i === 0 && celdaH) {
-            // Detectar si gviz fusionó fila 1 (años) y fila 2 (Educación Media) o si vienen separadas
-            const fila1Anios = [];
-            const fila2Valores = [];
-            let fusionado = false;
-
-            for (let col = 8; col <= 24; col++) {
-                const celda = String(row[col] ?? '').trim();
-                if (!celda) continue;
-                const partes = celda.split(/\s+/);
-                if (partes.length >= 2 && /^(19|20)\d{2}$/.test(partes[0])) {
-                    fusionado = true;
-                    fila1Anios.push(partes[0]);
-                    fila2Valores.push(cleanNum(partes.slice(1).join('')));
-                } else if (/^(19|20)\d{2}$/.test(celda)) {
-                    fila1Anios.push(celda);
+        // Tabla detallada por Nivel (H), Centro (I), Programa Educativo (L) y años dinámicos (M:...)
+        const colH = (row[7] || '').trim();
+        if (!headerCarrerasEncontrado && /^NIVEL$/i.test(colH)) {
+            headerCarrerasEncontrado = true;
+            for (let col = 12; col < row.length; col++) {
+                const celdaAnio = String(row[col] ?? '').trim();
+                if (/^(19|20)\d{2}$/.test(celdaAnio)) {
+                    aniosMeta.push({ label: celdaAnio, colIndex: col });
                 }
             }
+            aniosSerie = aniosMeta.map(a => a.label);
+        } else if (headerCarrerasEncontrado && colH && !/^NIVEL$/i.test(colH)) {
+            const centro = (row[8] || '').trim();
+            const carrera = (row[11] || '').trim();
+            const valores = aniosMeta.map(a => cleanNum(row[a.colIndex]));
+            const total = valores.reduce((sum, v) => sum + v, 0);
 
-            if (fila1Anios.length > 0) {
-                aniosSerie = fila1Anios;
-                if (fusionado && fila2Valores.length === fila1Anios.length) {
-                    const nombreNiv = celdaH.replace(/^Nivel\s*Educativo\s*/i, '').trim() || 'Educación Media';
-                    seriesPorNivel.push({ nombre: nombreNiv, valores: fila2Valores });
-                }
-            }
-        } else if (celdaH && !/^Nivel\s*Educativo$/i.test(celdaH) && aniosSerie.length > 0) {
-            const valoresFila = [];
-            for (let k = 0; k < aniosSerie.length; k++) {
-                valoresFila.push(cleanNum(row[8 + k]));
-            }
-            if (valoresFila.some(v => v > 0)) {
-                seriesPorNivel.push({ nombre: celdaH, valores: valoresFila });
+            // Sumar renglones con el mismo Programa Educativo dentro del mismo Nivel y Centro
+            const claveCarrera = `${colH.toUpperCase()}||${centro.toUpperCase()}||${carrera.replace(/\s+/g, ' ').toUpperCase()}`;
+            if (mapaCarreras.has(claveCarrera)) {
+                const existente = mapaCarreras.get(claveCarrera);
+                valores.forEach((v, idx) => {
+                    existente.valores[idx] += v;
+                });
+                existente.total += total;
+            } else {
+                mapaCarreras.set(claveCarrera, { nivel: colH, centro, carrera, valores, total });
             }
         }
     }
+
+    const egresadosPorCarrera = Array.from(mapaCarreras.values());
+
+    // Agrupar la serie histórica por los 3 niveles principales para mantener la gráfica por nivel
+    const agruparNivelSerie = (nivel) => {
+        const n = nivel.toLowerCase();
+        if (n.includes('media') || n.includes('bachillerato')) return 'Educación Media';
+        if (n.includes('licenciatura')) return 'Licenciatura';
+        return 'Posgrado';
+    };
+
+    const mapaSeriesNivel = new Map();
+    egresadosPorCarrera.forEach(item => {
+        const grupo = agruparNivelSerie(item.nivel);
+        if (!mapaSeriesNivel.has(grupo)) {
+            mapaSeriesNivel.set(grupo, new Array(aniosSerie.length).fill(0));
+        }
+        const acum = mapaSeriesNivel.get(grupo);
+        item.valores.forEach((v, idx) => {
+            acum[idx] += v;
+        });
+    });
+
+    const seriesPorNivel = Array.from(mapaSeriesNivel.entries())
+        .filter(([, valores]) => valores.some(v => v > 0))
+        .map(([nombre, valores]) => ({ nombre, valores }));
 
     // Respaldo si gviz fusionó PRIMERA LÍNEA y LÍNEA PRINCIPAL en D1:F2
     if (!textosInterfase['PRIMERA LÍNEA']) {
@@ -1968,6 +2013,153 @@ fetchSheetData('05_Egresados').then(data => {
         etiquetaNota.textContent = 'Nota: ';
         b5Footnote.append(etiquetaNota, document.createTextNode(`Corte al ${fechaCorteB5.toLowerCase()}.`));
         b5Footnote.hidden = false;
+    }
+
+    // 6. Tabla Modal de Egresados por Nivel, Centro Académico y Programa Educativo
+    const tablaEgresados = document.getElementById('tablaEgresados');
+    const searchEgresados = document.getElementById('b5-modal-search');
+    const countEgresados = document.getElementById('b5-modal-count');
+
+    if (tablaEgresados && egresadosPorCarrera.length > 0) {
+        const theadEgr = tablaEgresados.querySelector('thead');
+        const tbodyEgr = tablaEgresados.querySelector('tbody');
+        const tfootEgr = tablaEgresados.querySelector('tfoot');
+        const normalizarTexto = (txt) => String(txt || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+
+        if (countEgresados) {
+            const anioInicioEgr = aniosSerie[0] || '2010';
+            countEgresados.textContent = fechaCorteB5
+                ? `Histórico a partir de ${anioInicioEgr} al ${fechaCorteB5.toLowerCase()}`
+                : `Histórico a partir de ${anioInicioEgr} a la fecha de corte`;
+        }
+
+        if (theadEgr) {
+            const thAnios = aniosSerie.map(anio => `<th class="text-right">${escapeHTML(anio)}</th>`).join('');
+            setSafeHTML(theadEgr, `
+                <tr>
+                    <th>NIVEL, CENTRO ACADÉMICO Y PROGRAMA EDUCATIVO</th>
+                    <th class="text-right col-total">TOTAL</th>
+                    ${thAnios}
+                </tr>
+            `);
+        }
+
+        const sumarValores = (items) => {
+            const porAnio = new Array(aniosSerie.length).fill(0);
+            let total = 0;
+            items.forEach(item => {
+                total += item.total;
+                item.valores.forEach((v, idx) => {
+                    porAnio[idx] += v;
+                });
+            });
+            return { total, porAnio };
+        };
+
+        const renderTablaEgresados = (filtro = '') => {
+            if (!tbodyEgr) return;
+            const q = normalizarTexto(filtro.trim());
+            const filtrados = q
+                ? egresadosPorCarrera.filter(item =>
+                    normalizarTexto(item.carrera).includes(q) ||
+                    normalizarTexto(item.centro).includes(q) ||
+                    normalizarTexto(item.nivel).includes(q)
+                )
+                : egresadosPorCarrera;
+
+            if (filtrados.length === 0) {
+                const colSpan = 2 + aniosSerie.length;
+                setSafeHTML(tbodyEgr, `
+                    <tr>
+                        <td colspan="${colSpan}" style="text-align:center; padding: 28px; color: var(--text-secondary);">
+                            No se encontraron programas educativos que coincidan con "${escapeHTML(filtro.trim())}".
+                        </td>
+                    </tr>
+                `);
+                if (tfootEgr) setSafeHTML(tfootEgr, '');
+                return;
+            }
+
+            // Agrupar manteniendo el orden: Nivel -> Centro -> Carreras
+            const mapaNiveles = new Map();
+            filtrados.forEach(item => {
+                if (!mapaNiveles.has(item.nivel)) {
+                    mapaNiveles.set(item.nivel, new Map());
+                }
+                const mapaCentros = mapaNiveles.get(item.nivel);
+                if (!mapaCentros.has(item.centro)) {
+                    mapaCentros.set(item.centro, []);
+                }
+                mapaCentros.get(item.centro).push(item);
+            });
+
+            const expandirPorDefecto = Boolean(q);
+            let htmlTabla = '';
+            let grupoCentro = -1;
+
+            mapaNiveles.forEach((mapaCentros, nivelNombre) => {
+                const itemsNivel = Array.from(mapaCentros.values()).flat();
+                const subNivel = sumarValores(itemsNivel);
+                const colsNivel = subNivel.porAnio.map(v => `<td class="text-right">${v.toLocaleString('es-MX')}</td>`).join('');
+                htmlTabla += `<tr class="row-level"><td>${escapeHTML(nivelNombre.toUpperCase())}</td><td class="text-right col-total">${subNivel.total.toLocaleString('es-MX')}</td>${colsNivel}</tr>`;
+
+                mapaCentros.forEach((carrerasCentro, centroNombre) => {
+                    grupoCentro++;
+                    const subCentro = sumarValores(carrerasCentro);
+                    const colsCentro = subCentro.porAnio.map(v => `<td class="text-right">${v.toLocaleString('es-MX')}</td>`).join('');
+                    htmlTabla += `<tr class="row-center" data-center-group="${grupoCentro}" tabindex="0" role="button" aria-expanded="${expandirPorDefecto ? 'true' : 'false'}" aria-label="Desglosar programas educativos de ${escapeHTML(centroNombre)}"><td><span class="center-cell"><span class="center-toggle" aria-hidden="true"></span><span class="center-icon" aria-hidden="true"></span><span class="center-name">${escapeHTML(centroNombre)}</span></span></td><td class="text-right col-total">${subCentro.total.toLocaleString('es-MX')}</td>${colsCentro}</tr>`;
+
+                    carrerasCentro.forEach((c, idx) => {
+                        const isLastCareer = idx === carrerasCentro.length - 1;
+                        const colsCarrera = c.valores.map(v => `<td class="text-right">${v.toLocaleString('es-MX')}</td>`).join('');
+                        htmlTabla += `<tr class="row-career${expandirPorDefecto ? '' : ' is-collapsed'}${isLastCareer ? ' is-last-career' : ''}" data-center-detail="${grupoCentro}"><td><span class="career-cell"><span class="career-icon" aria-hidden="true"></span><span class="career-name">${escapeHTML(c.carrera || 'NA')}</span></span></td><td class="text-right col-total">${c.total.toLocaleString('es-MX')}</td>${colsCarrera}</tr>`;
+                    });
+                });
+            });
+
+            setSafeHTML(tbodyEgr, htmlTabla);
+
+            if (tfootEgr) {
+                const granTotal = sumarValores(filtrados);
+                const colsGranTotal = granTotal.porAnio.map(v => `<td class="text-right">${v.toLocaleString('es-MX')}</td>`).join('');
+                setSafeHTML(tfootEgr, `
+                    <tr class="row-grand-total">
+                        <td>GRAN TOTAL</td>
+                        <td class="text-right col-total">${granTotal.total.toLocaleString('es-MX')}</td>
+                        ${colsGranTotal}
+                    </tr>
+                `);
+            }
+
+            const toggleCentro = row => {
+                const expanded = row.getAttribute('aria-expanded') === 'true';
+                row.setAttribute('aria-expanded', String(!expanded));
+                tbodyEgr.querySelectorAll(`[data-center-detail="${row.dataset.centerGroup}"]`).forEach(detail => {
+                    detail.classList.toggle('is-collapsed', expanded);
+                });
+            };
+
+            tbodyEgr.querySelectorAll('.row-center').forEach(row => {
+                row.addEventListener('click', () => toggleCentro(row));
+                row.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        toggleCentro(row);
+                    }
+                });
+            });
+        };
+
+        renderTablaEgresados();
+
+        if (searchEgresados) {
+            searchEgresados.addEventListener('input', (e) => {
+                renderTablaEgresados(e.target.value);
+            });
+        }
     }
 
     // =========================================================================

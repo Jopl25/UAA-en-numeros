@@ -6,7 +6,6 @@ const USE_LOCAL_XLSX = false; // true = usa el archivo local .xlsx | false = Goo
 const LOCAL_XLSX_FILE = 'BD_UAA EN NUM.xlsx';
 // ID del documento de Google Sheets de donde se extrae la información
 // Solo cambiar si el documento cambia
-// const SPREADSHEET_ID = '1ZWcV0JuWVLMn4NmZFcjGE6D0R16Wuar5477HOvgILew'; // ID original
 const SPREADSHEET_ID = '1B1-w5BKwALYvyzKYYEyrNa2gIJ5e0z1lT8MsCzVkr6s'; // ID alternativo para pruebas
 
 // Detección 100% automática de entorno según el origen actual:

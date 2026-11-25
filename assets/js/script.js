@@ -908,8 +908,29 @@ fetchSheetData('01_Matricula', true).then(data => {
     }
 
     // 5. Tabla Modal
+    const normalizarTextoMat = (txt) => String(txt || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const searchMat = document.getElementById('b1-modal-search');
+    const countMat = document.getElementById('b1-modal-count');
+    const fechaCorteMat = (textosInterfase['FECHA DE CORTE'] && textosInterfase['FECHA DE CORTE'].h) || '';
+    if (countMat) countMat.textContent = fechaCorteMat ? 'Corte al ' + fechaCorteMat.toLowerCase() : 'Fecha de corte';
+    const tablaMat = document.getElementById('tablaMatricula');
+    const tbody = tablaMat ? tablaMat.querySelector('tbody') : null;
+
+    const renderTablaMatricula = (filtro = '') => {
+    const q = normalizarTextoMat(filtro.trim());
+    const listaMat = q
+        ? matriculaPorCarrera.filter(c =>
+            normalizarTextoMat(c.carrera).includes(q) ||
+            normalizarTextoMat(c.centro).includes(q) ||
+            normalizarTextoMat(c.nivelOriginal).includes(q))
+        : matriculaPorCarrera;
+    if (tbody && listaMat.length === 0) {
+        setSafeHTML(tbody, '<tr><td colspan="5" style="text-align:center; padding: 28px; color: var(--text-secondary);">No se encontraron resultados que coincidan con "' + escapeHTML(filtro.trim()) + '".</td></tr>');
+        return;
+    }
+    const expandirPorDefecto = Boolean(q);
     let subtotalesModal = {};
-    matriculaPorCarrera.forEach(c => {
+    listaMat.forEach(c => {
         if (!subtotalesModal[c.nivelOriginal]) subtotalesModal[c.nivelOriginal] = { mas: 0, fem: 0, x: 0, total: 0 };
         subtotalesModal[c.nivelOriginal].mas += c.mas;
         subtotalesModal[c.nivelOriginal].fem += c.fem;
@@ -922,7 +943,7 @@ fetchSheetData('01_Matricula', true).then(data => {
     let centroActual = '';
     let grupoCentro = -1;
     let subtotalCentro = { mas: 0, fem: 0, x: 0, total: 0 };
-    matriculaPorCarrera.forEach((c, idx) => {
+    listaMat.forEach((c, idx) => {
         if (c.nivelOriginal !== nivelActual) {
         nivelActual = c.nivelOriginal;
         centroActual = '';
@@ -933,16 +954,15 @@ fetchSheetData('01_Matricula', true).then(data => {
         centroActual = c.centro;
         grupoCentro++;
         subtotalCentro = { mas: 0, fem: 0, x: 0, total: 0 };
-        const centro = matriculaPorCarrera.filter(item => item.nivelOriginal === c.nivelOriginal && item.centro === c.centro);
+        const centro = listaMat.filter(item => item.nivelOriginal === c.nivelOriginal && item.centro === c.centro);
         subtotalCentro = centro.reduce((s, item) => ({ mas: s.mas + item.mas, fem: s.fem + item.fem, x: s.x + item.x, total: s.total + item.filaTotal }), subtotalCentro);
-        htmlTabla += `<tr class="row-center" data-center-group="${grupoCentro}" tabindex="0" role="button" aria-expanded="false" aria-label="Desglosar carreras de ${escapeHTML(c.centro)}"><td><span class="center-cell"><span class="center-toggle" aria-hidden="true"></span><span class="center-icon" aria-hidden="true"></span><span class="center-name">${escapeHTML(c.centro)}</span></span></td><td class="text-right">${subtotalCentro.total.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.x.toLocaleString('es-MX')}</td></tr>`;
+        htmlTabla += `<tr class="row-center" data-center-group="${grupoCentro}" tabindex="0" role="button" aria-expanded="${expandirPorDefecto ? 'true' : 'false'}" aria-label="Desglosar carreras de ${escapeHTML(c.centro)}"><td><span class="center-cell"><span class="center-toggle" aria-hidden="true"></span><span class="center-icon" aria-hidden="true"></span><span class="center-name">${escapeHTML(c.centro)}</span></span></td><td class="text-right">${subtotalCentro.total.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${subtotalCentro.x.toLocaleString('es-MX')}</td></tr>`;
         }
-        const nextItem = matriculaPorCarrera[idx + 1];
+        const nextItem = listaMat[idx + 1];
         const isLastCareer = !nextItem || nextItem.nivelOriginal !== c.nivelOriginal || nextItem.centro !== c.centro;
-        htmlTabla += `<tr class="row-career is-collapsed${isLastCareer ? ' is-last-career' : ''}" data-center-detail="${grupoCentro}"><td><span class="career-cell"><span class="career-icon" aria-hidden="true"></span><span class="career-name">${escapeHTML(c.carrera || 'NA')}</span></span></td><td class="text-right">${c.filaTotal.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.x.toLocaleString('es-MX')}</td></tr>`;
+        htmlTabla += `<tr class="row-career${expandirPorDefecto ? '' : ' is-collapsed'}${isLastCareer ? ' is-last-career' : ''}" data-center-detail="${grupoCentro}"><td><span class="career-cell"><span class="career-icon" aria-hidden="true"></span><span class="career-name">${escapeHTML(c.carrera || 'NA')}</span></span></td><td class="text-right">${c.filaTotal.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.mas.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.fem.toLocaleString('es-MX')}</td><td class="text-right col-gender">${c.x.toLocaleString('es-MX')}</td></tr>`;
     });
     
-    const tbody = document.querySelector('.glass-table tbody');
     if (tbody) {
         setSafeHTML(tbody, htmlTabla);
         const toggleCentro = row => {
@@ -960,6 +980,9 @@ fetchSheetData('01_Matricula', true).then(data => {
             });
         });
     }
+    };
+    renderTablaMatricula();
+    if (searchMat) searchMat.addEventListener('input', e => renderTablaMatricula(e.target.value));
     })
     .catch(error => {
     console.error('Detalle del error en Bloque 01:', error);

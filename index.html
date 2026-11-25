@@ -2093,9 +2093,19 @@
         <h2 class="modal-title">Tabla de Matrícula estudiantil por Centro Académico y por Carrera</h2>
         <button id="close-modal-centros" class="close-btn" type="button" aria-label="Cerrar">&times;</button>
       </div>
+      <div class="egresados-modal-toolbar">
+        <input
+          type="search"
+          id="b1-modal-search"
+          class="egresados-modal-search"
+          placeholder="Buscar carrera, centro o nivel..."
+          aria-label="Buscar carrera, centro o nivel"
+        >
+        <span id="b1-modal-count" class="egresados-modal-count"></span>
+      </div>
       <div class="matricula-modal-layout">
         <div class="modal-body matricula-table-scroll">
-          <table class="glass-table">
+          <table class="glass-table" id="tablaMatricula">
             <thead>
               <tr>
                 <th>NIVEL, CENTRO ACADÉMICO Y CARRERA</th>

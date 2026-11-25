@@ -3189,12 +3189,23 @@ a.email-link:hover {
     text-decoration: none;
     overflow-wrap: normal;
     vertical-align: baseline;
+    /* Nunca más ancho que la burbuja: las etiquetas largas se recortan con "…" */
+    max-width: 100%;
+    box-sizing: border-box;
     transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.bot-message .message-bubble a.chatbot-link .chatbot-link-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .bot-message .message-bubble a.chatbot-link::after {
     content: "\2197"; /* flecha ↗ */
     font-size: 11px;
+    flex-shrink: 0;
 }
 
 .bot-message .message-bubble a.chatbot-link--map::before {

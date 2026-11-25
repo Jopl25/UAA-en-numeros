@@ -6,7 +6,6 @@ const USE_LOCAL_XLSX = false; // true = usa el archivo local .xlsx | false = Goo
 const LOCAL_XLSX_FILE = 'BD_UAA EN NUM.xlsx';
 // ID del documento de Google Sheets de donde se extrae la información
 // Solo cambiar si el documento cambia
-// const SPREADSHEET_ID = '1ZWcV0JuWVLMn4NmZFcjGE6D0R16Wuar5477HOvgILew'; // ID original
 const SPREADSHEET_ID = '1B1-w5BKwALYvyzKYYEyrNa2gIJ5e0z1lT8MsCzVkr6s'; // ID alternativo para pruebas
 
 // Detección 100% automática de entorno según el origen actual:
@@ -4753,6 +4752,18 @@ function esEnlaceDeMapa(url) {
 }
 
 /**
+ * Reduce un hostname a su dominio principal para que la etiqueta sea corta
+ * (p. ej. consultapublicamx.plataformadetransparencia.org.mx → plataformadetransparencia.org.mx).
+ */
+function dominioCortoChatbot(hostname) {
+    const partes = String(hostname || '').replace(/^www\./i, '').split('.').filter(Boolean);
+    if (partes.length <= 2) return partes.join('.');
+    // Dominios de segundo nivel por país: org.mx, gob.mx, com.mx, edu.mx, etc.
+    const segundoNivel = /^(com|org|gob|gov|edu|net|ac|co)$/i.test(partes[partes.length - 2]);
+    return partes.slice(segundoNivel ? -3 : -2).join('.');
+}
+
+/**
  * Texto amigable para un enlace: se usa el texto del Markdown si es descriptivo;
  * si no (o si el texto es la propia URL), se genera una etiqueta según el destino.
  */
@@ -4761,7 +4772,7 @@ function etiquetaEnlaceChatbot(url, textoOriginal) {
     if (texto && !CHATBOT_URL_INICIO_REGEX.test(texto)) return texto;
     if (esEnlaceDeMapa(url)) return 'Ver ubicación en el mapa';
     try {
-        return `Abrir en ${new URL(url).hostname.replace(/^www\./i, '')}`;
+        return `Abrir en ${dominioCortoChatbot(new URL(url).hostname)}`;
     } catch (_) {
         return 'Abrir enlace';
     }
@@ -4769,7 +4780,10 @@ function etiquetaEnlaceChatbot(url, textoOriginal) {
 
 /** Aplica texto, clases y atributos homogéneos a un enlace web del chatbot. */
 function decorarEnlaceChatbot(enlace, url, textoOriginal) {
-    enlace.textContent = etiquetaEnlaceChatbot(url, textoOriginal);
+    const etiqueta = document.createElement('span');
+    etiqueta.className = 'chatbot-link-text';
+    etiqueta.textContent = etiquetaEnlaceChatbot(url, textoOriginal);
+    enlace.replaceChildren(etiqueta);
     enlace.classList.add('chatbot-link');
     if (esEnlaceDeMapa(url)) enlace.classList.add('chatbot-link--map');
     // La dirección completa queda visible al pasar el cursor y para lectores de pantalla

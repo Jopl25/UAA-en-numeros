@@ -48,7 +48,7 @@ const SAFE_TAGS = new Set([
     'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption',
     'img',
     'svg', 'g', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon',
-    'use', 'text', 'tspan', 'defs', 'lineargradient', 'radialgradient', 'stop'
+    'use', 'text', 'tspan', 'defs', 'clippath', 'lineargradient', 'radialgradient', 'stop'
 ]);
 
 // Etiquetas que se eliminan por completo junto con su contenido
@@ -61,9 +61,9 @@ const DROP_TAGS = new Set([
 
 // Atributos permitidos (además de data-* y aria-*)
 const SAFE_ATTRS = new Set([
-    'class', 'style', 'title', 'alt', 'role', 'target', 'rel', 'href', 'src',
+    'id', 'class', 'style', 'title', 'alt', 'role', 'target', 'rel', 'href', 'src',
     'width', 'height', 'colspan', 'rowspan', 'lang', 'dir',
-    'viewbox', 'fill', 'fill-opacity', 'fill-rule', 'clip-rule', 'opacity', 'stroke', 'stroke-width',
+    'viewbox', 'fill', 'fill-opacity', 'fill-rule', 'clip-path', 'clip-rule', 'opacity', 'stroke', 'stroke-width',
     'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'stroke-dashoffset', 'stroke-opacity',
     'stroke-miterlimit', 'd', 'points', 'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
     'dx', 'dy', 'transform', 'offset', 'stop-color', 'stop-opacity', 'text-anchor',
@@ -139,6 +139,10 @@ function cleanNodeTree(parent) {
                 }
             } else if (name === 'src') {
                 node.setAttribute(attr.name, safeUrl(value, { allowDataImage: true }));
+            } else if (name === 'clip-path') {
+                if (!/^url\(#[\w\-]+\)$/i.test(value.trim())) {
+                    node.removeAttribute(attr.name);
+                }
             } else if (name === 'style') {
                 if (hasUnsafeCss(value)) {
                     node.removeAttribute(attr.name);
@@ -2227,6 +2231,18 @@ fetchSheetData('06_Personal_Academico').then(data => {
     let cuerpos = {};
     let sniiPorCentro = {};
 
+    const accumulateGender = (target, ind, mujeres, hombres, noBinario, val) => {
+        const indLower = ind.toLowerCase();
+        if (indLower === 'mujeres') target.mujeres += val;
+        else if (indLower === 'hombres') target.hombres += val;
+        else if (indLower === 'no binario') target.noBinario += val;
+        else {
+            target.mujeres += mujeres;
+            target.hombres += hombres;
+            target.noBinario += noBinario;
+        }
+    };
+
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
         if (!row || row.length === 0) continue;
@@ -2234,42 +2250,99 @@ fetchSheetData('06_Personal_Academico').then(data => {
         // Textos de configuración (Col G, H e I)
         const keyTexto = (row[6] || '').trim();
         if (keyTexto) {
-        textosInterfase[keyTexto] = { h: (row[7] || '').trim(), i: (row[8] || '').trim() };
+            textosInterfase[keyTexto] = { h: (row[7] || '').trim(), i: (row[8] || '').trim() };
         }
 
-        // Datos de la tabla (Col A, B, C)
-        let cat = (row[0] || '').trim();
-        let ind = (row[1] || '').trim();
-        let val = cleanNum(row[2]);
+        // Tabla izquierda (Cols A-E: Categoría, Indicador, Mujer, Hombre, No binario)
+        const cat = (row[0] || '').trim();
+        const ind = (row[1] || '').trim();
+        const mujeres = cleanNum(row[2]);
+        const hombres = cleanNum(row[3]);
+        const noBinario = cleanNum(row[4]);
+        const val = mujeres + hombres + noBinario;
 
         if (cat && cat !== 'Categoría') {
-        if (cat === 'Tipo de Contratación') contratacion.push({ nombre: ind, valor: val });
-        else if (cat === 'SNII por Centro') {
-            const centro = ind;
-            const departamento = (row[2] || '').trim();
-            const investigadores = cleanNum(row[3]);
+            if (cat === 'Tipo de Contratación') {
+                contratacion.push({ nombre: ind, mujeres, hombres, noBinario, valor: val });
+            }
+            else if (cat === 'Investigadores (SNII)' || cat === 'Investigadores (SNII) - Género') {
+                accumulateGender(sniiGen, ind, mujeres, hombres, noBinario, val);
+            }
+            else if (cat === 'Investigadores (SNII) - Nivel') {
+                sniiNivel.push({ nombre: ind, mujeres, hombres, noBinario, valor: val });
+            }
+            else if (cat === 'Perfil PRODEP') {
+                accumulateGender(prodepGen, ind, mujeres, hombres, noBinario, val);
+            }
+            else if (cat === 'Cuerpos Académicos') cuerpos[ind] = val;
+        }
+
+        // Tabla derecha: SNII por Centro (Cols K-P: Categoría, Centro, Departamento, Mujer, Hombre, No binario)
+        const catCentro = (row[10] || '').trim();
+        if (catCentro === 'SNII por Centro') {
+            const centro = (row[11] || '').trim();
+            const departamento = (row[12] || '').trim();
+            const cMujeres = cleanNum(row[13]);
+            const cHombres = cleanNum(row[14]);
+            const cNoBinario = cleanNum(row[15]);
+            const investigadores = cMujeres + cHombres + cNoBinario;
             if (centro && departamento) {
                 if (!sniiPorCentro[centro]) sniiPorCentro[centro] = [];
-                sniiPorCentro[centro].push({ nombre: departamento, valor: investigadores });
+                sniiPorCentro[centro].push({
+                    nombre: departamento,
+                    mujeres: cMujeres,
+                    hombres: cHombres,
+                    noBinario: cNoBinario,
+                    valor: investigadores
+                });
             }
-        }
-        else if (cat === 'Investigadores (SNII) - Género') {
-            if (ind.toLowerCase() === 'mujeres') sniiGen.mujeres = val;
-            if (ind.toLowerCase() === 'hombres') sniiGen.hombres = val;
-            if (ind.toLowerCase() === 'no binario') sniiGen.noBinario = val;
-        }
-        else if (cat === 'Investigadores (SNII) - Nivel') sniiNivel.push({ nombre: ind, valor: val });
-        else if (cat === 'Perfil PRODEP') {
-            if (ind.toLowerCase() === 'mujeres') prodepGen.mujeres = val;
-            if (ind.toLowerCase() === 'hombres') prodepGen.hombres = val;
-            if (ind.toLowerCase() === 'no binario') prodepGen.noBinario = val;
-        }
-        else if (cat === 'Cuerpos Académicos') cuerpos[ind] = val;
         }
     }
 
     const b6 = document.getElementById('bloque-06-cards');
     if (!b6) return;
+
+    function buildGenderPictogram(idPrefix, mujeres, hombres, noBinario, compact = false) {
+        const total = mujeres + hombres + noBinario;
+        if (total <= 0) return '';
+        const pctH = ((hombres / total) * 100).toFixed(1);
+        const pctM = ((mujeres / total) * 100).toFixed(1);
+        const pctNB = ((noBinario / total) * 100).toFixed(1);
+        const manPath = 'M28 52 C28 46, 34 44, 50 44 C66 44, 72 46, 72 52 L78 92 C78 96, 74 98, 70 96 L66 74 L66 188 C66 194, 56 194, 56 188 L56 112 L44 112 L44 188 C44 194, 34 194, 34 188 L34 74 L30 96 C26 98, 22 96, 22 92 Z';
+        const womanPath = 'M30 52 C30 46, 36 44, 50 44 C64 44, 70 46, 70 52 L76 92 C76 96, 72 98, 68 96 L64 74 L74 130 C75 134, 71 136, 68 136 L58 136 L58 188 C58 194, 42 194, 42 188 L42 136 L32 136 C29 136, 25 134, 26 130 L36 74 L32 96 C28 98, 24 96, 24 92 Z';
+        const renderSilueta = (clipId, pathD, colorVar, bgRgba, count, pct, label) => `
+            <div class="b6-pictogram-col">
+                <div class="b6-pictogram-num counter" style="color: ${colorVar};" data-target="${count}">0</div>
+                <svg viewBox="0 0 100 200" class="b6-pictogram-svg" aria-hidden="true">
+                    <defs>
+                        <clipPath id="${clipId}">
+                            <circle cx="50" cy="24" r="16" />
+                            <path d="${pathD}" />
+                        </clipPath>
+                    </defs>
+                    <g clip-path="url(#${clipId})">
+                        <rect x="0" y="0" width="100" height="200" fill="${bgRgba}" />
+                        <rect class="liquid-fill-rect" data-fill-pct="${pct}" x="0" y="200" width="100" height="0" fill="${colorVar}" />
+                    </g>
+                    <circle cx="50" cy="24" r="16" fill="none" stroke="${colorVar}" stroke-width="3" opacity="0.6" />
+                    <path d="${pathD}" fill="none" stroke="${colorVar}" stroke-width="3" opacity="0.6" />
+                </svg>
+                <div class="b6-pictogram-pct">${pct}% <span>${label}</span></div>
+            </div>`;
+        return `
+            <div class="b6-pictogram-box${compact ? ' is-compact' : ''}">
+                ${renderSilueta(`clipMan-${idPrefix}`, manPath, 'var(--color-men)', 'rgba(140, 163, 204, 0.2)', hombres, pctH, 'Hombres')}
+                ${renderSilueta(`clipWoman-${idPrefix}`, womanPath, 'var(--color-women)', 'rgba(186, 156, 198, 0.2)', mujeres, pctM, 'Mujeres')}
+                ${noBinario > 0 ? renderSilueta(`clipNb-${idPrefix}`, manPath, 'var(--uaa-teal)', 'rgba(21, 96, 130, 0.2)', noBinario, pctNB, 'No binario') : ''}
+            </div>`;
+    }
+
+    function buildGenderLegend(includeNb) {
+        return `
+            <span class="b6-gender-legend-item"><span class="b6-gender-dot is-women"></span>Mujer</span>
+            <span class="b6-gender-legend-item"><span class="b6-gender-dot is-men"></span>Hombre</span>
+            ${includeNb ? '<span class="b6-gender-legend-item"><span class="b6-gender-dot is-nb"></span>No binario</span>' : ''}`;
+    }
 
     // 1. Textos Generales
     if (textosInterfase['PRIMERA LÍNEA']) document.getElementById('b6-tag-text').innerText = textosInterfase['PRIMERA LÍNEA'].h;
@@ -2287,25 +2360,50 @@ fetchSheetData('06_Personal_Academico').then(data => {
     if (textosInterfase['TARJETA 1 SECUNDARIA']) document.getElementById('b6-t1-desc').innerText = textosInterfase['TARJETA 1 SECUNDARIA'].h;
 
     let totalPlantilla = contratacion.reduce((sum, item) => sum + item.valor, 0);
+    let totalMujeresPlantilla = contratacion.reduce((sum, item) => sum + item.mujeres, 0);
+    let totalHombresPlantilla = contratacion.reduce((sum, item) => sum + item.hombres, 0);
+    let totalNbPlantilla = contratacion.reduce((sum, item) => sum + item.noBinario, 0);
     let tecnicosAc = contratacion.find(c => c.nombre.includes('Técnicos'))?.valor || 0;
     let profesores = totalPlantilla - tecnicosAc;
 
     document.getElementById('b6-total-plantilla').setAttribute('data-target', totalPlantilla);
     setSafeHTML(document.getElementById('b6-plantilla-texto'), `Conformado por <strong>${profesores.toLocaleString('es-MX')} profesores</strong> de distintas dedicaciones y <strong>${tecnicosAc.toLocaleString('es-MX')} Técnicos Académicos</strong> especializados.`);
 
-    // 3. Tarjeta 2: Tipos de Contratación (Barras)
+    const plantillaGeneroEl = document.getElementById('b6-plantilla-genero');
+    if (plantillaGeneroEl && totalPlantilla > 0) {
+        setSafeHTML(plantillaGeneroEl, buildGenderPictogram('b6-plantilla', totalMujeresPlantilla, totalHombresPlantilla, totalNbPlantilla, true));
+    }
+
+    // 3. Tarjeta 2: Tipos de Contratación (Barras apiladas por género)
     if (textosInterfase['TARJETA 2 PRIMERA LÍNEA']) document.getElementById('b6-t2-tag').innerText = textosInterfase['TARJETA 2 PRIMERA LÍNEA'].h;
-    
+
+    const legendContratacionEl = document.getElementById('b6-contratacion-legend');
+    if (legendContratacionEl) {
+        setSafeHTML(legendContratacionEl, buildGenderLegend(totalNbPlantilla > 0));
+    }
+
     let htmlContratacion = '';
-    const coloresContratacion = ['var(--uaa-navy)', 'var(--uaa-teal)', 'var(--uaa-gold-vibrant)', 'var(--uaa-magenta)'];
-    
-    contratacion.forEach((c, index) => {
+    contratacion.forEach(c => {
         const pct = totalPlantilla > 0 ? (c.valor / totalPlantilla) * 100 : 0;
-        const color = coloresContratacion[index % coloresContratacion.length];
+        const pctM = totalPlantilla > 0 ? (c.mujeres / totalPlantilla) * 100 : 0;
+        const pctH = totalPlantilla > 0 ? (c.hombres / totalPlantilla) * 100 : 0;
+        const pctNB = totalPlantilla > 0 ? (c.noBinario / totalPlantilla) * 100 : 0;
+        const shareM = c.valor > 0 ? ((c.mujeres / c.valor) * 100).toFixed(1) : '0.0';
+        const shareH = c.valor > 0 ? ((c.hombres / c.valor) * 100).toFixed(1) : '0.0';
+        const shareNB = c.valor > 0 ? ((c.noBinario / c.valor) * 100).toFixed(1) : '0.0';
         htmlContratacion += `
         <div class="bar-item">
-            <div class="bar-labels"><span class="bar-name">${c.nombre} (${c.valor.toLocaleString('es-MX')})</span><span class="bar-value">${pct.toFixed(1)}%</span></div>
-            <div class="progress-track"><div class="progress-fill" style="width: 0%; background: ${color};" data-percent="${pct.toFixed(1)}%"></div></div>
+            <div class="bar-labels"><span class="bar-name">${escapeHTML(c.nombre)} (${c.valor.toLocaleString('es-MX')})</span><span class="bar-value">${pct.toFixed(1)}%</span></div>
+            <div class="progress-track b6-stacked-track">
+                <div class="progress-fill" style="width: 0%; background: var(--color-women);" data-percent="${pctM.toFixed(2)}%" title="Mujeres: ${c.mujeres.toLocaleString('es-MX')}"></div>
+                <div class="progress-fill" style="width: 0%; background: var(--color-men);" data-percent="${pctH.toFixed(2)}%" title="Hombres: ${c.hombres.toLocaleString('es-MX')}"></div>
+                ${c.noBinario > 0 ? `<div class="progress-fill" style="width: 0%; background: var(--uaa-teal);" data-percent="${pctNB.toFixed(2)}%" title="No binario: ${c.noBinario.toLocaleString('es-MX')}"></div>` : ''}
+            </div>
+            <div class="b6-bar-subgender">
+                <span><i class="b6-gender-dot is-women"></i>${c.mujeres.toLocaleString('es-MX')} M (${shareM}%)</span>
+                <span><i class="b6-gender-dot is-men"></i>${c.hombres.toLocaleString('es-MX')} H (${shareH}%)</span>
+                ${c.noBinario > 0 ? `<span><i class="b6-gender-dot is-nb"></i>${c.noBinario.toLocaleString('es-MX')} NB (${shareNB}%)</span>` : ''}
+            </div>
         </div>`;
     });
     setSafeHTML(document.getElementById('b6-bars-contratacion'), htmlContratacion);
@@ -2316,15 +2414,43 @@ fetchSheetData('06_Personal_Academico').then(data => {
     
     let totalSnii = sniiNivel.reduce((sum, item) => sum + item.valor, 0);
     document.getElementById('b6-snii-total').setAttribute('data-target', totalSnii);
-    setSafeHTML(document.getElementById('b6-snii-texto'), `Profesores con distinción SNII (<strong>${sniiGen.mujeres} mujeres</strong>, <strong>${sniiGen.hombres} hombres</strong> y <strong>${sniiGen.noBinario} personas no binarias</strong>).`);
+    setSafeHTML(document.getElementById('b6-snii-genero-bar'), buildGenderPictogram('b6-snii', sniiGen.mujeres, sniiGen.hombres, sniiGen.noBinario, true));
+    setSafeHTML(document.getElementById('b6-snii-texto'), `Profesores con distinción SNII (<strong>${sniiGen.mujeres.toLocaleString('es-MX')} mujeres</strong>, <strong>${sniiGen.hombres.toLocaleString('es-MX')} hombres</strong>${sniiGen.noBinario > 0 ? ` y <strong>${sniiGen.noBinario.toLocaleString('es-MX')} personas no binarias</strong>` : ''}).`);
 
-    let htmlSnii = '';
+    const sniiNivelTieneGenero = sniiNivel.some(n => n.hombres > 0 || n.noBinario > 0);
+    const totalNbSniiNivel = sniiNivel.reduce((sum, n) => sum + n.noBinario, 0);
+    let htmlSnii = sniiNivelTieneGenero
+        ? `<div class="b6-gender-legend" style="margin-bottom: 6px;">${buildGenderLegend(totalNbSniiNivel > 0)}</div>`
+        : '';
     sniiNivel.forEach(n => {
-        htmlSnii += `
-        <div class="breakdown-item">
-            <div class="breakdown-header"><span class="breakdown-label">${n.nombre}</span><span class="breakdown-val counter" data-target="${n.valor}">0</span></div>
-            <div class="progress-track"><div class="progress-fill" data-value="${n.valor}" data-total="${totalSnii}" style="background: #565D6D; width: 0%;"></div></div>
-        </div>`;
+        if (sniiNivelTieneGenero) {
+            const pctM = totalSnii > 0 ? (n.mujeres / totalSnii) * 100 : 0;
+            const pctH = totalSnii > 0 ? (n.hombres / totalSnii) * 100 : 0;
+            const pctNB = totalSnii > 0 ? (n.noBinario / totalSnii) * 100 : 0;
+            const shareM = n.valor > 0 ? ((n.mujeres / n.valor) * 100).toFixed(1) : '0.0';
+            const shareH = n.valor > 0 ? ((n.hombres / n.valor) * 100).toFixed(1) : '0.0';
+            const shareNB = n.valor > 0 ? ((n.noBinario / n.valor) * 100).toFixed(1) : '0.0';
+            htmlSnii += `
+            <div class="breakdown-item">
+                <div class="breakdown-header"><span class="breakdown-label">${escapeHTML(n.nombre)}</span><span class="breakdown-val counter" data-target="${n.valor}">0</span></div>
+                <div class="progress-track b6-stacked-track">
+                    <div class="progress-fill" style="width: 0%; background: var(--color-women);" data-percent="${pctM.toFixed(2)}%" title="Mujeres: ${n.mujeres.toLocaleString('es-MX')}"></div>
+                    <div class="progress-fill" style="width: 0%; background: var(--color-men);" data-percent="${pctH.toFixed(2)}%" title="Hombres: ${n.hombres.toLocaleString('es-MX')}"></div>
+                    ${n.noBinario > 0 ? `<div class="progress-fill" style="width: 0%; background: var(--uaa-teal);" data-percent="${pctNB.toFixed(2)}%" title="No binario: ${n.noBinario.toLocaleString('es-MX')}"></div>` : ''}
+                </div>
+                <div class="b6-bar-subgender">
+                    <span><i class="b6-gender-dot is-women"></i>${n.mujeres.toLocaleString('es-MX')} M (${shareM}%)</span>
+                    <span><i class="b6-gender-dot is-men"></i>${n.hombres.toLocaleString('es-MX')} H (${shareH}%)</span>
+                    ${n.noBinario > 0 ? `<span><i class="b6-gender-dot is-nb"></i>${n.noBinario.toLocaleString('es-MX')} NB (${shareNB}%)</span>` : ''}
+                </div>
+            </div>`;
+        } else {
+            htmlSnii += `
+            <div class="breakdown-item">
+                <div class="breakdown-header"><span class="breakdown-label">${escapeHTML(n.nombre)}</span><span class="breakdown-val counter" data-target="${n.valor}">0</span></div>
+                <div class="progress-track"><div class="progress-fill" data-value="${n.valor}" data-total="${totalSnii}" style="background: #565D6D; width: 0%;"></div></div>
+            </div>`;
+        }
     });
     setSafeHTML(document.getElementById('b6-snii-breakdown'), htmlSnii);
 
@@ -2334,7 +2460,8 @@ fetchSheetData('06_Personal_Academico').then(data => {
 
     let totalProdep = prodepGen.mujeres + prodepGen.hombres + prodepGen.noBinario;
     document.getElementById('b6-prodep-total').setAttribute('data-target', totalProdep);
-    setSafeHTML(document.getElementById('b6-prodep-texto'), `Fortalecimiento de las funciones sustantivas de la institución, integrado por <strong>${prodepGen.mujeres} mujeres</strong>, <strong>${prodepGen.hombres} hombres</strong> y <strong>${prodepGen.noBinario || 0} personas no binarias</strong> con reconocimiento vigente.`);
+    setSafeHTML(document.getElementById('b6-prodep-genero-bar'), buildGenderPictogram('b6-prodep', prodepGen.mujeres, prodepGen.hombres, prodepGen.noBinario, true));
+    setSafeHTML(document.getElementById('b6-prodep-texto'), `Fortalecimiento de las funciones sustantivas de la institución, integrado por <strong>${prodepGen.mujeres.toLocaleString('es-MX')} mujeres</strong>, <strong>${prodepGen.hombres.toLocaleString('es-MX')} hombres</strong>${prodepGen.noBinario > 0 ? ` y <strong>${prodepGen.noBinario.toLocaleString('es-MX')} personas no binarias</strong>` : ''} con reconocimiento vigente.`);
 
     // 5. Gráfico interactivo de investigadores SNII por centro o departamento
     const centroContainer = document.getElementById('b6-snii-distribucion');
@@ -2343,11 +2470,19 @@ fetchSheetData('06_Personal_Academico').then(data => {
     const centroBotones = document.querySelectorAll('[data-snii-group]');
     const listaCentros = Object.entries(sniiPorCentro);
     const registrosSnii = listaCentros.flatMap(([centro, departamentos]) =>
-        departamentos.map(d => ({ centro, departamento: d.nombre, valor: d.valor }))
+        departamentos.map(d => ({
+            centro,
+            departamento: d.nombre,
+            mujeres: d.mujeres,
+            hombres: d.hombres,
+            noBinario: d.noBinario,
+            valor: d.valor
+        }))
     );
     const totalInvestigadoresPorCentro = listaCentros.reduce((total, [, departamentos]) =>
         total + departamentos.reduce((subtotal, d) => subtotal + d.valor, 0), 0
     );
+    const totalNbSniiCentros = registrosSnii.reduce((sum, r) => sum + r.noBinario, 0);
 
     function iconoCentro(nombre) {
         const texto = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -2383,35 +2518,53 @@ fetchSheetData('06_Personal_Academico').then(data => {
             return;
         }
 
-        const generarFila = (etiqueta, valor, barPct, porcentajeTotal, etiquetaVisual, clase = '') => `
+        const generarFila = (etiqueta, valor, barPct, porcentajeTotal, etiquetaVisual, clase = '', desglose = null) => {
+            const mujeres = desglose?.mujeres || 0;
+            const hombres = desglose?.hombres || 0;
+            const noBinario = desglose?.noBinario || 0;
+            const sumaGen = mujeres + hombres + noBinario;
+            const barHtml = sumaGen > 0
+                ? `<div class="snii-chart-bar-seg is-women" style="width:${(barPct * (mujeres / sumaGen)).toFixed(2)}%" title="Mujeres: ${mujeres}"></div>` +
+                  `<div class="snii-chart-bar-seg is-men" style="width:${(barPct * (hombres / sumaGen)).toFixed(2)}%" title="Hombres: ${hombres}"></div>` +
+                  (noBinario > 0 ? `<div class="snii-chart-bar-seg is-nb" style="width:${(barPct * (noBinario / sumaGen)).toFixed(2)}%" title="No binario: ${noBinario}"></div>` : '')
+                : `<div class="snii-chart-bar" style="width:${barPct.toFixed(2)}%"></div>`;
+            const ariaDesc = sumaGen > 0
+                ? `${escapeHTML(etiqueta)}: ${valor.toLocaleString('es-MX')} investigadores (${mujeres} mujeres, ${hombres} hombres${noBinario > 0 ? `, ${noBinario} no binario` : ''})`
+                : `${escapeHTML(etiqueta)}: ${valor.toLocaleString('es-MX')} investigadores`;
+            return `
             <div class="snii-chart-row ${clase}">
                 <div class="snii-chart-labels">${etiquetaVisual}</div>
-                <div class="snii-chart-track" role="img" aria-label="${escapeHTML(etiqueta)}: ${valor.toLocaleString('es-MX')} investigadores">
-                    <div class="snii-chart-bar" style="width:${barPct.toFixed(2)}%"></div>
+                <div class="snii-chart-track" role="img" aria-label="${ariaDesc}">
+                    ${barHtml}
                 </div>
                 <div class="snii-chart-metrics"><span class="snii-chart-value">${valor.toLocaleString('es-MX')}</span><span class="snii-chart-percent">${porcentajeTotal.toFixed(1)}%</span></div>
             </div>`;
+        };
 
         let html = '';
+        const leyendaSnii = `<div class="b6-gender-legend" style="margin-bottom: 14px;">${buildGenderLegend(totalNbSniiCentros > 0)}</div>`;
         if (agrupacion === 'centro-departamento') {
             const centros = Object.entries(sniiPorCentro).map(([centro, departamentos]) => ({
                 nombre: centro,
                 departamentos: [...departamentos].sort((a, b) => b.valor - a.valor || a.nombre.localeCompare(b.nombre, 'es')),
-                total: departamentos.reduce((sum, departamento) => sum + departamento.valor, 0)
+                total: departamentos.reduce((sum, departamento) => sum + departamento.valor, 0),
+                mujeres: departamentos.reduce((sum, departamento) => sum + departamento.mujeres, 0),
+                hombres: departamentos.reduce((sum, departamento) => sum + departamento.hombres, 0),
+                noBinario: departamentos.reduce((sum, departamento) => sum + departamento.noBinario, 0)
             })).sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre, 'es'));
             const maxCentro = Math.max(...centros.map(centro => centro.total), 0);
             const totalDepartamentos = Object.values(sniiPorCentro).reduce((sum, departamentos) => sum + departamentos.length, 0);
             if (centroResumen) centroResumen.textContent = `${totalInvestigadoresPorCentro.toLocaleString('es-MX')} investigadores en ${centros.length.toLocaleString('es-MX')} centros y ${totalDepartamentos.toLocaleString('es-MX')} departamentos`;
 
-            html = centros.map(centro => {
+            html = leyendaSnii + centros.map(centro => {
                 const etiquetaCentro = `<div class="snii-chart-center-trigger" role="button" tabindex="0" aria-expanded="false" data-center-toggle="${escapeHTML(centro.nombre)}"><span class="center-toggle" aria-hidden="true"></span><span class="snii-center-icon">${iconoCentro(centro.nombre)}</span><span class="snii-chart-label">${escapeHTML(centro.nombre)}</span></div>`;
                 const filaCentro = generarFila(centro.nombre, centro.total, maxCentro > 0 ? centro.total / maxCentro * 100 : 0,
                     totalInvestigadoresPorCentro > 0 ? centro.total / totalInvestigadoresPorCentro * 100 : 0,
-                    etiquetaCentro, 'snii-chart-parent-row');
+                    etiquetaCentro, 'snii-chart-parent-row', centro);
                 const filasDepartamentos = centro.departamentos.map(departamento => `
                     <div class="snii-chart-department-row">
                         <span class="snii-department-name"><span class="snii-chart-label">${escapeHTML(departamento.nombre)}</span></span>
-                        <span class="snii-department-count">${departamento.valor.toLocaleString('es-MX')}</span>
+                        <span class="snii-department-count">${departamento.valor.toLocaleString('es-MX')}<span class="snii-dept-gender">(${departamento.mujeres} M · ${departamento.hombres} H${departamento.noBinario > 0 ? ` · ${departamento.noBinario} NB` : ''})</span></span>
                     </div>`).join('');
                 const numDeptos = centro.departamentos.length;
                 const txtInvestigadores = centro.total === 1 ? 'investigador' : 'investigadores';
@@ -2423,6 +2576,11 @@ fetchSheetData('06_Personal_Academico').then(data => {
                             <span class="snii-summary-label">Total del centro</span>
                             <strong class="snii-summary-total">${centro.total.toLocaleString('es-MX')}</strong>
                             <span class="snii-summary-sub">${txtInvestigadores}</span>
+                            <div class="snii-summary-gender">
+                                <span><i class="b6-gender-dot is-women"></i> ${centro.mujeres} M</span>
+                                <span><i class="b6-gender-dot is-men"></i> ${centro.hombres} H</span>
+                                ${centro.noBinario > 0 ? `<span><i class="b6-gender-dot is-nb"></i> ${centro.noBinario} NB</span>` : ''}
+                            </div>
                         </div>
                         <div class="snii-summary-divider" aria-hidden="true"></div>
                         <div class="snii-summary-block">
@@ -2436,8 +2594,11 @@ fetchSheetData('06_Personal_Academico').then(data => {
             const grupos = new Map();
             registrosSnii.forEach(registro => {
                 const etiqueta = registro.departamento;
-                const actual = grupos.get(etiqueta) || { valor: 0, centros: new Set() };
+                const actual = grupos.get(etiqueta) || { valor: 0, mujeres: 0, hombres: 0, noBinario: 0, centros: new Set() };
                 actual.valor += registro.valor;
+                actual.mujeres += registro.mujeres;
+                actual.hombres += registro.hombres;
+                actual.noBinario += registro.noBinario;
                 if (registro.centro) actual.centros.add(registro.centro);
                 grupos.set(etiqueta, actual);
             });
@@ -2445,7 +2606,7 @@ fetchSheetData('06_Personal_Academico').then(data => {
             const valorMaximo = Math.max(...datos.map(([, info]) => info.valor), 0);
             if (centroResumen) centroResumen.textContent = `${totalInvestigadoresPorCentro.toLocaleString('es-MX')} investigadores en ${datos.length.toLocaleString('es-MX')} departamentos`;
 
-            html = datos.map(([etiqueta, info]) => {
+            html = leyendaSnii + datos.map(([etiqueta, info]) => {
                 const { valor, centros } = info;
                 const listaCentrosDepto = [...centros];
                 const centroPrincipal = listaCentrosDepto[0] || '';
@@ -2454,9 +2615,9 @@ fetchSheetData('06_Personal_Academico').then(data => {
                 const tooltipCentro = textoCentro
                     ? `<span class="snii-dept-center-tooltip" role="tooltip"><span class="snii-tooltip-icon">${iconoCentro(centroPrincipal)}</span><span class="snii-tooltip-text"><span class="snii-tooltip-prefix">Centro:</span> ${escapeHTML(textoCentro)}</span></span>`
                     : '';
-                const etiquetaVisual = `<span class="snii-department-name"><span class="snii-department-dot" aria-hidden="true"></span><span class="snii-chart-label">${escapeHTML(etiqueta)}</span></span>${tooltipCentro}`;
+                const etiquetaVisual = `<span class="snii-department-name"><span class="snii-department-dot" aria-hidden="true"></span><span class="snii-chart-label">${escapeHTML(etiqueta)}</span><span class="snii-dept-gender">(${info.mujeres} M · ${info.hombres} H${info.noBinario > 0 ? ` · ${info.noBinario} NB` : ''})</span></span>${tooltipCentro}`;
                 return generarFila(etiqueta, valor, valorMaximo > 0 ? valor / valorMaximo * 100 : 0,
-                    porcentajeTotal, etiquetaVisual, 'snii-dept-flat-row');
+                    porcentajeTotal, etiquetaVisual, 'snii-dept-flat-row', info);
             }).join('');
         }
 
@@ -2523,6 +2684,13 @@ fetchSheetData('06_Personal_Academico').then(data => {
             const tot = parseFloat(f.getAttribute('data-total') || 1);
             if(tot > 0) f.style.width = (val / tot * 100) + '%';
         }
+        });
+
+        cardsContainer.querySelectorAll('.liquid-fill-rect[data-fill-pct]').forEach(rect => {
+            const pct = parseFloat(rect.getAttribute('data-fill-pct') || 0);
+            const fillH = (pct / 100) * 200;
+            rect.setAttribute('height', fillH);
+            rect.setAttribute('y', 200 - fillH);
         });
     }, 50);
 

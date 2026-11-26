@@ -1372,6 +1372,7 @@ body::before {
 }
 
 .snii-chart-track {
+    display: flex;
     height: 11px;
     overflow: hidden;
     border-radius: 999px;
@@ -1386,8 +1387,189 @@ body::before {
     transition: width .45s ease;
 }
 
+.snii-chart-bar-seg {
+    height: 100%;
+    transition: width .45s ease;
+}
+
+.snii-chart-bar-seg.is-women {
+    background: var(--color-women);
+}
+
+.snii-chart-bar-seg.is-men {
+    background: var(--color-men);
+}
+
+.snii-chart-bar-seg.is-nb {
+    background: var(--uaa-teal);
+}
+
 .snii-dept-flat-row .snii-chart-bar {
     background: linear-gradient(90deg, var(--text-muted), var(--uaa-gray));
+}
+
+/* ==================== DESGLOSE POR GÉNERO (BLOQUE 06) ==================== */
+.b6-gender-summary {
+    margin-top: 18px;
+}
+
+.b6-gender-mini-bar {
+    margin-top: 16px;
+}
+
+.b6-snii-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.b6-snii-top-row > div:first-child {
+    flex: 1 1 220px;
+}
+
+.b6-pictogram-box {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 16px 12px;
+    background: rgba(22, 48, 114, 0.025);
+    border-radius: 20px;
+    border: 1px solid rgba(22, 48, 114, 0.06);
+    gap: 14px;
+}
+
+.b6-pictogram-box.is-compact {
+    padding: 12px 16px;
+    gap: 20px;
+}
+
+.b6-pictogram-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 72px;
+}
+
+.b6-pictogram-num {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.b6-pictogram-svg {
+    width: 44px;
+    height: 88px;
+    overflow: visible;
+}
+
+.b6-pictogram-box.is-compact .b6-pictogram-svg {
+    width: 38px;
+    height: 76px;
+}
+
+.b6-pictogram-pct {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
+.b6-pictogram-pct span {
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.b6-gender-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.b6-gender-dot.is-women { background: var(--color-women); }
+.b6-gender-dot.is-men { background: var(--color-men); }
+.b6-gender-dot.is-nb { background: var(--uaa-teal); }
+
+.b6-gender-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.b6-gender-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.b6-stacked-track {
+    display: flex;
+    gap: 1px;
+    overflow: hidden;
+}
+
+.b6-stacked-track .progress-fill {
+    border-radius: 0;
+}
+
+.b6-stacked-track .progress-fill:first-child {
+    border-top-left-radius: 999px;
+    border-bottom-left-radius: 999px;
+}
+
+.b6-stacked-track .progress-fill:last-child {
+    border-top-right-radius: 999px;
+    border-bottom-right-radius: 999px;
+}
+
+.b6-bar-subgender {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 5px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.b6-bar-subgender span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.snii-dept-gender {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.snii-summary-gender {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 760px) {

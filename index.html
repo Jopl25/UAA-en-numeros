@@ -689,12 +689,16 @@
           <div class="hero-metric-desc" id="b6-t1-desc" style="margin-bottom: 16px;">...</div>
           <div class="hero-metric-num counter" id="b6-total-plantilla" data-target="0">0</div>
           <div class="hero-metric-bar-yellow" style="max-width: 220px;"></div>
+          <div id="b6-plantilla-genero" class="b6-gender-summary"></div>
         </div>
         <p class="metric-subtext" id="b6-plantilla-texto" style="margin-top: 24px;">...</p>
       </article>
 
       <article class="card card-7 card-bars reveal">
-        <div class="card-section-tag" id="b6-t2-tag">...</div>
+        <div class="flex-row-between" style="flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+          <div class="card-section-tag" id="b6-t2-tag" style="margin-bottom: 0;">...</div>
+          <div class="b6-gender-legend" id="b6-contratacion-legend"></div>
+        </div>
         <div class="bars-container" id="b6-bars-contratacion"
           style="display: flex; flex-direction: column; gap: 14px; width: 100%;">
           <!-- Inyectado por JS -->
@@ -712,10 +716,13 @@
             src="https://snii.org/wp-content/uploads/2026/04/cropped-snii-sistema-nacional-de-investigadores-logo.png"
             alt="Logo SNII" style="height: 42px; object-fit: contain; opacity: 0.9;">
         </div>
-        <div style="margin-bottom: 24px;">
-          <div class="hero-metric-num counter" id="b6-snii-total" data-target="0">0</div>
-          <div class="hero-metric-bar-yellow" style="max-width: 180px; margin-top: 8px; margin-bottom: 12px;"></div>
-          <p class="metric-subtext" id="b6-snii-texto">...</p>
+        <div class="b6-snii-top-row">
+          <div>
+            <div class="hero-metric-num counter" id="b6-snii-total" data-target="0">0</div>
+            <div class="hero-metric-bar-yellow" style="max-width: 180px; margin-top: 8px; margin-bottom: 12px;"></div>
+            <p class="metric-subtext" id="b6-snii-texto">...</p>
+          </div>
+          <div id="b6-snii-genero-bar"></div>
         </div>
         <div class="breakdown-list" id="b6-snii-breakdown">
           <!-- Inyectado por JS -->
@@ -735,6 +742,7 @@
           <div class="hero-metric-label" style="margin-bottom: 4px;">Docentes con Perfil Deseable</div>
           <div class="hero-metric-num counter" id="b6-prodep-total" data-target="0">0</div>
           <div class="hero-metric-bar-yellow" style="max-width: 140px; margin-top: 6px;"></div>
+          <div id="b6-prodep-genero-bar" class="b6-gender-mini-bar"></div>
         </div>
         <div
           style="background: rgba(22, 48, 114, 0.03); padding: 16px; border-radius: 16px; border: 1px solid rgba(22, 48, 114, 0.06);">

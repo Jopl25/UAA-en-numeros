@@ -240,6 +240,46 @@
           Consultar Tabla de Matrícula estudiantil por Centro Académico y por Carrera &#8599;
         </button>
       </div>
+
+      <article class="card card-12 card-age-distribution reveal" id="ageDistributionCard">
+        <div class="gender-card-header">
+          <div class="gender-card-title-group">
+            <h3>Distribución por Edad</h3>
+            <p>Composición etaria de la Matrícula Estudiantil</p>
+          </div>
+          <div class="segmented-control" id="ageFilter" role="group" aria-label="Filtrar distribución por edad por nivel educativo">
+            <button class="segment-btn active" type="button" data-level="media">Educación Media</button>
+            <button class="segment-btn" type="button" data-level="licenciatura">Licenciatura</button>
+            <button class="segment-btn" type="button" data-level="especialidades">Especialidad</button>
+            <button class="segment-btn" type="button" data-level="especialidadesMedicas">Especialidad Médica</button>
+            <button class="segment-btn" type="button" data-level="maestria">Maestría</button>
+            <button class="segment-btn" type="button" data-level="doctorado">Doctorado</button>
+          </div>
+        </div>
+
+        <div class="age-gender-legend" aria-label="Leyenda por género">
+          <span class="age-legend-item"><i class="b6-gender-dot is-men" aria-hidden="true"></i> Hombres <span id="ageLegendMen"></span></span>
+          <span class="age-legend-item"><i class="b6-gender-dot is-women" aria-hidden="true"></i> Mujeres <span id="ageLegendWomen"></span></span>
+          <span class="age-legend-item"><i class="b6-gender-dot is-nb" aria-hidden="true"></i> No binario <span id="ageLegendNb"></span></span>
+        </div>
+
+        <div class="age-chart-stage" id="ageChartStage" aria-live="polite">
+          <!-- Renderizado dinámicamente por JS -->
+        </div>
+
+        <div class="gender-meta-footer age-meta-footer">
+          <div><strong id="ageTotalSummary">...</strong></div>
+          <div class="non-binary-tag age-highlight-tag" id="ageHighlightTag">
+            <span>Rango predominante:</span> <strong id="ageTopRange">...</strong>
+          </div>
+        </div>
+      </article>
+
+      <div class="matricula-action-wrapper reveal">
+        <button id="open-modal-edades" type="button" class="block-action-link" style="background:none; border-top:none; border-left:none; border-right:none;">
+          Consultar Tabla de Matrícula por Edad, Centro Académico y Carrera &#8599;
+        </button>
+      </div>
     </section>
 
     <div class="block-divider"></div>
@@ -2134,6 +2174,48 @@
     <img
       src="assets/img/indicacion-desplegar-carreras.png"
       alt="Da clic sobre el centro para desplegar el detalle por carrera"
+      class="matricula-modal-hint"
+    >
+  </div>
+
+  <!-- MODAL DESGLOSE MATRÍCULA POR EDAD Y CARRERA (BLOQUE 01) -->
+  <div class="glass-modal-overlay" id="modalEdades">
+    <div class="glass-modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Tabla de Matrícula por Rango de Edad, Centro Académico y Carrera</h2>
+        <button id="close-modal-edades" class="close-btn" type="button" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="egresados-modal-toolbar">
+        <input
+          type="search"
+          id="b1-edad-modal-search"
+          class="egresados-modal-search"
+          placeholder="Buscar carrera, centro o nivel..."
+          aria-label="Buscar carrera, centro o nivel en tabla por edad"
+        >
+        <div class="segmented-control" id="b1-edad-modal-filter" role="group" aria-label="Seleccionar rango de edad por nivel">
+          <button class="segment-btn active" type="button" data-group="media">Educación Media</button>
+          <button class="segment-btn" type="button" data-group="superior">Licenciatura y Posgrado</button>
+        </div>
+        <div class="edad-table-actions" role="group" aria-label="Controlar el detalle de la tabla">
+          <button type="button" id="b1-edad-expand-all">Expandir todo</button>
+          <button type="button" id="b1-edad-collapse-all">Contraer todo</button>
+        </div>
+        <span id="b1-edad-modal-count" class="egresados-modal-count"></span>
+      </div>
+      <div class="matricula-modal-layout">
+        <div class="modal-body matricula-table-scroll">
+          <table class="glass-table" id="tablaEdades">
+            <thead></thead>
+            <tbody></tbody>
+            <tfoot></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+    <img
+      src="assets/img/desplegar-tabla.png"
+      alt="Da clic para desplegar el detalle de la tabla"
       class="matricula-modal-hint"
     >
   </div>

@@ -400,6 +400,31 @@ if (modalEgresados) {
     });
 }
 
+const modalEdades = document.getElementById('modalEdades');
+const botonAbrirModalEdades = document.getElementById('open-modal-edades');
+const botonCerrarModalEdades = document.getElementById('close-modal-edades');
+
+if (modalEdades) {
+    if (botonAbrirModalEdades) {
+        botonAbrirModalEdades.addEventListener('click', () => {
+            modalEdades.classList.add('open');
+            syncModalScrollLock();
+        });
+    }
+    if (botonCerrarModalEdades) {
+        botonCerrarModalEdades.addEventListener('click', () => {
+            modalEdades.classList.remove('open');
+            syncModalScrollLock();
+        });
+    }
+    modalEdades.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.remove('open');
+            syncModalScrollLock();
+        }
+    });
+}
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const abiertos = document.querySelectorAll('.glass-modal-overlay.open');
@@ -438,6 +463,7 @@ const genderData = {
     licenciatura: { men: 0, women: 0, x: 0, total: 0 },
     media: { men: 0, women: 0, x: 0, total: 0 },
     especialidades: { men: 0, women: 0, x: 0, total: 0 },
+    especialidadesMedicas: { men: 0, women: 0, x: 0, total: 0 },
     maestria: { men: 0, women: 0, x: 0, total: 0 },
     doctorado: { men: 0, women: 0, x: 0, total: 0 }
 };
@@ -791,11 +817,12 @@ if (document.readyState === 'loading') {
 // AUTOMATIZACIÓN BLOQUE 01: MATRÍCULA
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-fetchSheetData('01_Matricula', true).then(data => {
+fetchSheetData('01_Matricula').then(data => {
     
     let totalGlobal = 0, masGlobal = 0, femGlobal = 0, xGlobal = 0;
     let textosInterfase = {};
     let matriculaPorCarrera = [];
+    const carrerasMap = new Map();
     
     const nivelesResumen = {
         'Educación Media': { mas: 0, fem: 0, x: 0, total: 0 },
@@ -806,46 +833,148 @@ fetchSheetData('01_Matricula', true).then(data => {
         'Doctorado': { mas: 0, fem: 0, x: 0, total: 0 }
     };
 
-    // CORRECCIÓN: Ahora el ciclo empieza en 0 para no saltarnos la fila 1
+    const nivelToKey = {
+        'Educación Media': 'media',
+        'Licenciatura': 'licenciatura',
+        'Especialidades': 'especialidades',
+        'Especialidades Médicas': 'especialidadesMedicas',
+        'Maestría': 'maestria',
+        'Doctorado': 'doctorado'
+    };
+
+    const RANGOS_EDAD_MEDIA = [
+        { key: 'lt18', label: '17 años o menos', shortLabel: '≤ 17' },
+        { key: '18', label: '18 años', shortLabel: '18' },
+        { key: '19', label: '19 años', shortLabel: '19' },
+        { key: '20', label: '20 años', shortLabel: '20' },
+        { key: '21plus_media', label: '21 o más', shortLabel: '21+' }
+    ];
+
+    const RANGOS_EDAD_SUPERIOR = [
+        { key: 'lt18', label: 'menos de 18', shortLabel: '< 18' },
+        { key: '18', label: '18 años', shortLabel: '18' },
+        { key: '19', label: '19 años', shortLabel: '19' },
+        { key: '20', label: '20 años', shortLabel: '20' },
+        { key: '21', label: '21 años', shortLabel: '21' },
+        { key: '22', label: '22 años', shortLabel: '22' },
+        { key: '23', label: '23 años', shortLabel: '23' },
+        { key: '24', label: '24 años', shortLabel: '24' },
+        { key: '25', label: '25 años', shortLabel: '25' },
+        { key: '26', label: '26 años', shortLabel: '26' },
+        { key: '27', label: '27 años', shortLabel: '27' },
+        { key: '28plus', label: '28 años o más', shortLabel: '28+' }
+    ];
+
+    const RANGOS_EDAD_ALL_KEYS = [
+        'lt18', '18', '19', '20', '21', '21plus_media', '22', '23', '24', '25', '26', '27', '28plus'
+    ];
+
+    const normalizarRangoEdad = (raw) => {
+        const t = String(raw || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (!t) return null;
+        if (t.includes('17') || t.includes('menos de 18')) return 'lt18';
+        if (t === '21 o mas' || (t.includes('21') && t.includes('mas'))) return '21plus_media';
+        if (t.includes('28')) return '28plus';
+        const match = t.match(/\b(18|19|20|21|22|23|24|25|26|27)\b/);
+        return match ? match[1] : null;
+    };
+
+    const crearMapaEdadesVacio = () => {
+        const obj = {};
+        RANGOS_EDAD_ALL_KEYS.forEach(k => { obj[k] = { mas: 0, fem: 0, x: 0, total: 0 }; });
+        return obj;
+    };
+
+    const ageDataByLevel = {
+        licenciatura: crearMapaEdadesVacio(),
+        media: crearMapaEdadesVacio(),
+        especialidades: crearMapaEdadesVacio(),
+        especialidadesMedicas: crearMapaEdadesVacio(),
+        maestria: crearMapaEdadesVacio(),
+        doctorado: crearMapaEdadesVacio()
+    };
+
+    // Detectar dinámicamente si la hoja incluye la columna "Rango Edad" (col D / índice 3)
+    const headerRow = data[0] || [];
+    const hasAgeColumn = String(headerRow[3] || '').trim().toLowerCase().includes('edad');
+    const idxEdad = hasAgeColumn ? 3 : -1;
+    const idxMas = hasAgeColumn ? 4 : 3;
+    const idxFem = hasAgeColumn ? 5 : 4;
+    const idxX = hasAgeColumn ? 6 : 5;
+    const idxTextKey = hasAgeColumn ? 8 : 7;
+
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
         if (!row || row.length === 0) continue;
 
-        // La columna Carrera desplaza los textos de interfaz de G a H.
-        const keyTexto = (row[7] || '').trim();
+        // Textos de interfaz (desplazados a col I-L cuando existe Rango Edad)
+        const keyTexto = (row[idxTextKey] || '').trim();
         if (keyTexto) {
-        textosInterfase[keyTexto] = { 
-            h: (row[8] || '').trim(),
-            i: (row[9] || '').trim(),
-            j: (row[10] || '').trim()
-        };
+            textosInterfase[keyTexto] = { 
+                h: (row[idxTextKey + 1] || '').trim(),
+                i: (row[idxTextKey + 2] || '').trim(),
+                j: (row[idxTextKey + 3] || '').trim()
+            };
         }
 
-        // Mapeo de la tabla nueva: nivel, centro, carrera y matrícula por género (A-F).
         const nivelOriginal = (row[0] || '').trim();
-        
-        // CORRECCIÓN: Le decimos que ignore específicamente la celda del encabezado para no sumarla
         if (nivelOriginal && nivelOriginal !== 'Nivel Académico') {
-        const centro = (row[1] || '').trim();
-        const carrera = (row[2] || '').trim();
-        const mas = cleanNum(row[3]);
-        const fem = cleanNum(row[4]);
-        const x = cleanNum(row[5]);
-        const filaTotal = mas + fem + x;
+            const centro = (row[1] || '').trim();
+            const carrera = (row[2] || '').trim();
+            const ageKey = idxEdad >= 0 ? normalizarRangoEdad(row[idxEdad]) : null;
+            const mas = cleanNum(row[idxMas]);
+            const fem = cleanNum(row[idxFem]);
+            const x = cleanNum(row[idxX]);
+            const filaTotal = mas + fem + x;
 
-        totalGlobal += filaTotal; 
-        masGlobal += mas; 
-        femGlobal += fem; 
-        xGlobal += x;
+            totalGlobal += filaTotal; 
+            masGlobal += mas; 
+            femGlobal += fem; 
+            xGlobal += x;
 
-        let nivelClave = nivelOriginal;
-        if (nivelesResumen[nivelClave]) {
-            nivelesResumen[nivelClave].mas += mas;
-            nivelesResumen[nivelClave].fem += fem;
-            nivelesResumen[nivelClave].x += x;
-            nivelesResumen[nivelClave].total += filaTotal;
-        }
-        matriculaPorCarrera.push({ nivelOriginal, centro, carrera, mas, fem, x, filaTotal });
+            if (nivelesResumen[nivelOriginal]) {
+                nivelesResumen[nivelOriginal].mas += mas;
+                nivelesResumen[nivelOriginal].fem += fem;
+                nivelesResumen[nivelOriginal].x += x;
+                nivelesResumen[nivelOriginal].total += filaTotal;
+            }
+
+            if (ageKey) {
+                const lvlKey = nivelToKey[nivelOriginal];
+                if (lvlKey && ageDataByLevel[lvlKey]) {
+                    ageDataByLevel[lvlKey][ageKey].mas += mas;
+                    ageDataByLevel[lvlKey][ageKey].fem += fem;
+                    ageDataByLevel[lvlKey][ageKey].x += x;
+                    ageDataByLevel[lvlKey][ageKey].total += filaTotal;
+                }
+            }
+
+            const carreraKey = `${nivelOriginal}||${centro}||${carrera}`;
+            let entry = carrerasMap.get(carreraKey);
+            if (!entry) {
+                entry = {
+                    nivelOriginal,
+                    centro,
+                    carrera,
+                    mas: 0,
+                    fem: 0,
+                    x: 0,
+                    filaTotal: 0,
+                    edades: crearMapaEdadesVacio()
+                };
+                carrerasMap.set(carreraKey, entry);
+                matriculaPorCarrera.push(entry);
+            }
+            entry.mas += mas;
+            entry.fem += fem;
+            entry.x += x;
+            entry.filaTotal += filaTotal;
+            if (ageKey) {
+                entry.edades[ageKey].mas += mas;
+                entry.edades[ageKey].fem += fem;
+                entry.edades[ageKey].x += x;
+                entry.edades[ageKey].total += filaTotal;
+            }
         }
     }
 
@@ -986,6 +1115,359 @@ fetchSheetData('01_Matricula', true).then(data => {
     };
     renderTablaMatricula();
     if (searchMat) searchMat.addEventListener('input', e => renderTablaMatricula(e.target.value));
+
+    // 6. Tarjeta Distribución por Edad
+    const ageStage = document.getElementById('ageChartStage');
+    const ageTotalSummary = document.getElementById('ageTotalSummary');
+    const ageTopRange = document.getElementById('ageTopRange');
+    const ageLegendMen = document.getElementById('ageLegendMen');
+    const ageLegendWomen = document.getElementById('ageLegendWomen');
+    const ageLegendNb = document.getElementById('ageLegendNb');
+    const ageFilterButtons = document.querySelectorAll('#ageFilter .segment-btn');
+
+    const getRangosVisibles = (levelKey) => (
+        levelKey === 'media' ? RANGOS_EDAD_MEDIA : RANGOS_EDAD_SUPERIOR
+    );
+
+    const renderAgeDistribution = (levelKey = 'media') => {
+        if (!ageStage) return;
+        const mapa = ageDataByLevel[levelKey] || ageDataByLevel.media;
+        const rangos = getRangosVisibles(levelKey);
+        const rangosPiramide = [...rangos].reverse(); // Mayores arriba, menores en la base
+        const levelTotal = rangos.reduce((acc, r) => acc + (mapa[r.key]?.total || 0), 0);
+        const levelMas = rangos.reduce((acc, r) => acc + (mapa[r.key]?.mas || 0), 0);
+        const levelFem = rangos.reduce((acc, r) => acc + (mapa[r.key]?.fem || 0), 0);
+        const levelX = rangos.reduce((acc, r) => acc + (mapa[r.key]?.x || 0), 0);
+        const maxSide = Math.max(...rangos.map(r => Math.max(mapa[r.key]?.mas || 0, mapa[r.key]?.fem || 0)), 1);
+
+        if (ageLegendMen) ageLegendMen.innerText = `(${levelMas.toLocaleString('es-MX')})`;
+        if (ageLegendWomen) ageLegendWomen.innerText = `(${levelFem.toLocaleString('es-MX')})`;
+        if (ageLegendNb) ageLegendNb.innerText = `(${levelX.toLocaleString('es-MX')})`;
+
+        let topRango = null;
+        let topVal = -1;
+        rangos.forEach(r => {
+            const v = mapa[r.key]?.total || 0;
+            if (v > topVal) {
+                topVal = v;
+                topRango = r;
+            }
+        });
+
+        const htmlHeader = `<div class="age-pyramid-header">
+            <span class="age-pyramid-header-left">Hombres</span>
+            <span class="age-pyramid-header-center">Edad</span>
+            <span class="age-pyramid-header-right">Mujeres</span>
+        </div>`;
+
+        const htmlBars = rangosPiramide.map(r => {
+            const d = mapa[r.key] || { mas: 0, fem: 0, x: 0, total: 0 };
+            const etiqueta = r.label;
+            const pctTotal = levelTotal > 0 ? ((d.total / levelTotal) * 100).toFixed(1) : '0.0';
+            const wMas = d.mas > 0 ? Math.max((d.mas / maxSide) * 100, 1.5).toFixed(2) : '0';
+            const wFem = d.fem > 0 ? Math.max((d.fem / maxSide) * 100, 1.5).toFixed(2) : '0';
+            const isTop = topRango && r.key === topRango.key && d.total > 0;
+            const titleDetalle = `${etiqueta}: ${d.total.toLocaleString('es-MX')} estudiantes (${d.mas.toLocaleString('es-MX')} Hombres · ${d.fem.toLocaleString('es-MX')} Mujeres · ${d.x.toLocaleString('es-MX')} No binario)`;
+
+            return `<div class="age-pyramid-row${isTop ? ' is-top' : ''}" title="${escapeHTML(titleDetalle)}">
+                <div class="age-pyramid-side is-left">
+                    <span class="age-pyramid-val">${d.mas.toLocaleString('es-MX')}</span>
+                    <div class="age-pyramid-track">
+                        <div class="age-pyramid-bar is-men" style="width:${wMas}%"></div>
+                    </div>
+                </div>
+                <div class="age-pyramid-center">
+                    <span class="age-pyramid-age-lbl">${escapeHTML(etiqueta)}</span>
+                    <span class="age-pyramid-sub">${d.total.toLocaleString('es-MX')} (${pctTotal}%)${d.x > 0 ? ` · <span class="age-pyramid-nb">NB: ${d.x}</span>` : ''}</span>
+                </div>
+                <div class="age-pyramid-side is-right">
+                    <div class="age-pyramid-track">
+                        <div class="age-pyramid-bar is-women" style="width:${wFem}%"></div>
+                    </div>
+                    <span class="age-pyramid-val">${d.fem.toLocaleString('es-MX')}</span>
+                </div>
+            </div>`;
+        }).join('');
+
+        setSafeHTML(ageStage, htmlHeader + htmlBars);
+
+        if (ageTotalSummary) {
+            ageTotalSummary.innerText = `${levelTotal.toLocaleString('es-MX')} estudiantes distribuidos en ${rangos.length} rangos de edad`;
+        }
+        if (ageTopRange) {
+            if (topRango && topVal > 0) {
+                const topPct = levelTotal > 0 ? ((topVal / levelTotal) * 100).toFixed(1) : '0.0';
+                ageTopRange.innerText = `${topRango.label} (${topVal.toLocaleString('es-MX')} • ${topPct}%)`;
+            } else {
+                ageTopRange.innerText = 'Sin datos';
+            }
+        }
+    };
+
+    renderAgeDistribution('media');
+    ageFilterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            ageFilterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderAgeDistribution(btn.getAttribute('data-level'));
+        });
+    });
+
+    // 7. Tabla Modal de Edades por Carrera (desglose por género desplegable debajo de cada carrera)
+    const searchEdadMat = document.getElementById('b1-edad-modal-search');
+    const countEdadMat = document.getElementById('b1-edad-modal-count');
+    const modalEdadFilterButtons = document.querySelectorAll('#b1-edad-modal-filter .segment-btn');
+    if (countEdadMat) countEdadMat.textContent = fechaCorteMat ? 'Corte al ' + fechaCorteMat.toLowerCase() : 'Fecha de corte';
+    const tablaEdades = document.getElementById('tablaEdades');
+    const theadEdades = tablaEdades ? tablaEdades.querySelector('thead') : null;
+    const tbodyEdades = tablaEdades ? tablaEdades.querySelector('tbody') : null;
+    const tfootEdades = tablaEdades ? tablaEdades.querySelector('tfoot') : null;
+
+    let grupoModalEdadActivo = 'media';
+
+    const renderTablaEdades = (filtro = '', grupo = grupoModalEdadActivo) => {
+        if (!tbodyEdades) return;
+        grupoModalEdadActivo = grupo === 'superior' ? 'superior' : 'media';
+        const rangos = grupoModalEdadActivo === 'media' ? RANGOS_EDAD_MEDIA : RANGOS_EDAD_SUPERIOR;
+
+        if (theadEdades) {
+            const thEdades = rangos.map(r => `<th class="text-right" title="${escapeHTML(r.label)}" aria-label="${escapeHTML(r.label)}">${escapeHTML(r.shortLabel)}</th>`).join('');
+            setSafeHTML(theadEdades, `<tr><th>NIVEL, CENTRO ACADÉMICO Y CARRERA</th><th class="text-right col-total">TOTAL</th>${thEdades}</tr>`);
+        }
+
+        const baseLista = matriculaPorCarrera.filter(c => (
+            grupoModalEdadActivo === 'media'
+                ? c.nivelOriginal === 'Educación Media'
+                : c.nivelOriginal !== 'Educación Media'
+        ));
+
+        const q = normalizarTextoMat(filtro.trim());
+        const listaMat = q
+            ? baseLista.filter(c =>
+                normalizarTextoMat(c.carrera).includes(q) ||
+                normalizarTextoMat(c.centro).includes(q) ||
+                normalizarTextoMat(c.nivelOriginal).includes(q))
+            : baseLista;
+
+        const totalCols = 2 + rangos.length;
+        if (listaMat.length === 0) {
+            setSafeHTML(tbodyEdades, `<tr><td colspan="${totalCols}" style="text-align:center; padding: 28px; color: var(--text-secondary);">No se encontraron resultados que coincidan con "${escapeHTML(filtro.trim())}".</td></tr>`);
+            if (tfootEdades) setSafeHTML(tfootEdades, '');
+            return;
+        }
+
+        const expandirPorDefecto = Boolean(q);
+        const sumarEdades = (items) => {
+            const acc = { total: 0, mas: 0, fem: 0, x: 0, edades: {} };
+            rangos.forEach(r => { acc.edades[r.key] = { mas: 0, fem: 0, x: 0, total: 0 }; });
+            items.forEach(item => {
+                acc.total += item.filaTotal;
+                acc.mas += item.mas;
+                acc.fem += item.fem;
+                acc.x += item.x;
+                rangos.forEach(r => {
+                    const src = item.edades[r.key] || { mas: 0, fem: 0, x: 0, total: 0 };
+                    acc.edades[r.key].mas += src.mas;
+                    acc.edades[r.key].fem += src.fem;
+                    acc.edades[r.key].x += src.x;
+                    acc.edades[r.key].total += src.total;
+                });
+            });
+            return acc;
+        };
+
+        const renderAgeCells = (edadesObj, field = 'total') => rangos.map(r => {
+            const cell = edadesObj[r.key] || { mas: 0, fem: 0, x: 0, total: 0 };
+            const val = cell[field] || 0;
+            return `<td class="text-right">${val.toLocaleString('es-MX')}</td>`;
+        }).join('');
+
+        let htmlTabla = '';
+        let nivelActual = '';
+        let centroActual = '';
+        let grupoNivel = -1;
+        let grupoCentro = -1;
+        let grupoCarrera = -1;
+        const expandirNivelPorDefecto = expandirPorDefecto || grupoModalEdadActivo === 'media';
+        const mostrarFilaNivel = grupoModalEdadActivo !== 'media';
+
+        const generosFilas = [
+            { field: 'mas', label: 'Hombres', cls: 'is-men', dotCls: 'is-men' },
+            { field: 'fem', label: 'Mujeres', cls: 'is-women', dotCls: 'is-women' },
+            { field: 'x', label: 'No binario (X)', cls: 'is-nb', dotCls: 'is-nb' }
+        ];
+
+        const renderGenderSummaryPills = (sub) => `<span class="table-gender-pills"><span class="table-gender-pill"><i class="b6-gender-dot is-men" aria-hidden="true"></i>${sub.mas.toLocaleString('es-MX')} H</span><span class="table-gender-pill"><i class="b6-gender-dot is-women" aria-hidden="true"></i>${sub.fem.toLocaleString('es-MX')} M</span><span class="table-gender-pill"><i class="b6-gender-dot is-nb" aria-hidden="true"></i>${sub.x.toLocaleString('es-MX')} NB</span></span>`;
+
+        listaMat.forEach((c, idx) => {
+            if (c.nivelOriginal !== nivelActual) {
+                nivelActual = c.nivelOriginal;
+                centroActual = '';
+                grupoNivel++;
+                if (mostrarFilaNivel) {
+                    const itemsNivel = baseLista.filter(item => item.nivelOriginal === nivelActual);
+                    const subNivel = sumarEdades(itemsNivel);
+                    htmlTabla += `<tr class="row-level row-level-expandable" data-level-group="${grupoNivel}" tabindex="0" role="button" aria-expanded="${expandirNivelPorDefecto ? 'true' : 'false'}" aria-label="Desglosar centros de ${escapeHTML(nivelActual)}"><td><span class="level-header-cell"><span class="center-toggle" aria-hidden="true"></span><span class="level-name-wrap"><span>${escapeHTML(nivelActual.toUpperCase())}</span>${renderGenderSummaryPills(subNivel)}</span></span></td><td class="text-right col-total">${subNivel.total.toLocaleString('es-MX')}</td>${renderAgeCells(subNivel.edades)}</tr>`;
+                }
+            }
+            if (c.centro !== centroActual) {
+                centroActual = c.centro;
+                grupoCentro++;
+                const itemsCentro = baseLista.filter(item => item.nivelOriginal === c.nivelOriginal && item.centro === c.centro);
+                const subCentro = sumarEdades(itemsCentro);
+                const centroOculto = !expandirNivelPorDefecto;
+                const centroExpandido = expandirPorDefecto;
+                htmlTabla += `<tr class="row-center${centroOculto ? ' is-collapsed' : ''}" data-level-detail="${grupoNivel}" data-center-group="${grupoCentro}" tabindex="0" role="button" aria-expanded="${centroExpandido ? 'true' : 'false'}" aria-label="Desglosar edades por carrera de ${escapeHTML(c.centro)}"><td><span class="center-cell"><span class="center-toggle" aria-hidden="true"></span><span class="center-icon" aria-hidden="true"></span><span class="center-name-wrap"><span class="center-name">${escapeHTML(c.centro)}</span>${renderGenderSummaryPills(subCentro)}</span></span></td><td class="text-right col-total">${subCentro.total.toLocaleString('es-MX')}</td>${renderAgeCells(subCentro.edades)}</tr>`;
+                if (mostrarFilaNivel) {
+                    generosFilas.forEach(g => {
+                        const totalGenCentro = subCentro[g.field] || 0;
+                        htmlTabla += `<tr class="row-center-gender ${g.cls}${centroExpandido ? '' : ' is-collapsed'}" data-level-detail="${grupoNivel}" data-center-detail="${grupoCentro}"><td><span class="gender-branch-cell"><i class="b6-gender-dot ${g.dotCls}" aria-hidden="true"></i><span>${g.label} (centro)</span></span></td><td class="text-right">${totalGenCentro.toLocaleString('es-MX')}</td>${renderAgeCells(subCentro.edades, g.field)}</tr>`;
+                    });
+                }
+            }
+            const nextItem = listaMat[idx + 1];
+            const isLastCareer = !nextItem || nextItem.nivelOriginal !== c.nivelOriginal || nextItem.centro !== c.centro;
+            grupoCarrera++;
+            htmlTabla += `<tr class="row-career row-career-expandable${expandirPorDefecto ? '' : ' is-collapsed'}${isLastCareer ? ' is-last-career' : ''}" data-level-detail="${grupoNivel}" data-center-detail="${grupoCentro}" data-career-group="${grupoCarrera}" tabindex="0" role="button" aria-expanded="false" aria-label="Desglosar género de ${escapeHTML(c.carrera || 'NA')}"><td><span class="career-cell"><span class="career-toggle" aria-hidden="true"></span><span class="career-icon" aria-hidden="true"></span><span class="career-name">${escapeHTML(c.carrera || 'NA')}</span></span></td><td class="text-right col-total">${c.filaTotal.toLocaleString('es-MX')}</td>${renderAgeCells(c.edades)}</tr>`;
+
+            generosFilas.forEach((g, gIdx) => {
+                const isLastGender = gIdx === generosFilas.length - 1;
+                const totalGen = c[g.field] || 0;
+                htmlTabla += `<tr class="row-gender-detail ${g.cls} is-collapsed${isLastCareer ? ' in-last-career' : ''}${isLastGender ? ' is-last-gender' : ''}" data-level-detail="${grupoNivel}" data-center-detail="${grupoCentro}" data-career-detail="${grupoCarrera}"><td><span class="gender-branch-cell"><i class="b6-gender-dot ${g.dotCls}" aria-hidden="true"></i><span>${g.label}</span></span></td><td class="text-right">${totalGen.toLocaleString('es-MX')}</td>${renderAgeCells(c.edades, g.field)}</tr>`;
+            });
+        });
+
+        setSafeHTML(tbodyEdades, htmlTabla);
+
+        if (tfootEdades) {
+            const granTotal = sumarEdades(baseLista);
+            const htmlTfootGeneros = generosFilas.map((g, gIdx) => {
+                const isLastGender = gIdx === generosFilas.length - 1;
+                const totalGen = granTotal[g.field] || 0;
+                return `<tr class="row-total-gender ${g.cls}${isLastGender ? ' is-last-gender' : ''}"><td><span class="total-gender-cell"><i class="b6-gender-dot ${g.dotCls}" aria-hidden="true"></i> <span>${g.label}</span></span></td><td class="text-right">${totalGen.toLocaleString('es-MX')}</td>${renderAgeCells(granTotal.edades, g.field)}</tr>`;
+            }).join('');
+            setSafeHTML(tfootEdades, `<tr class="row-total-general"><td>TOTAL GENERAL</td><td class="text-right col-total">${granTotal.total.toLocaleString('es-MX')}</td>${renderAgeCells(granTotal.edades)}</tr>${htmlTfootGeneros}`);
+        }
+
+        const toggleNivelEdad = row => {
+            const expanded = row.getAttribute('aria-expanded') === 'true';
+            const nextExpanded = !expanded;
+            row.setAttribute('aria-expanded', String(nextExpanded));
+            const levelId = row.dataset.levelGroup;
+            tbodyEdades.querySelectorAll(`.row-center[data-level-detail="${levelId}"]`).forEach(centerRow => {
+                centerRow.classList.toggle('is-collapsed', !nextExpanded);
+                const centerExpanded = centerRow.getAttribute('aria-expanded') === 'true';
+                const centerId = centerRow.dataset.centerGroup;
+                tbodyEdades.querySelectorAll(`.row-center-gender[data-center-detail="${centerId}"]`).forEach(cgRow => {
+                    cgRow.classList.toggle('is-collapsed', !nextExpanded || !centerExpanded);
+                });
+                tbodyEdades.querySelectorAll(`.row-career[data-center-detail="${centerId}"]`).forEach(careerRow => {
+                    careerRow.classList.toggle('is-collapsed', !nextExpanded || !centerExpanded);
+                    const careerExpanded = careerRow.getAttribute('aria-expanded') === 'true';
+                    const careerId = careerRow.dataset.careerGroup;
+                    tbodyEdades.querySelectorAll(`.row-gender-detail[data-career-detail="${careerId}"]`).forEach(gRow => {
+                        gRow.classList.toggle('is-collapsed', !nextExpanded || !centerExpanded || !careerExpanded);
+                    });
+                });
+            });
+        };
+
+        const toggleCentroEdad = row => {
+            const expanded = row.getAttribute('aria-expanded') === 'true';
+            const nextExpanded = !expanded;
+            row.setAttribute('aria-expanded', String(nextExpanded));
+            const centerId = row.dataset.centerGroup;
+            tbodyEdades.querySelectorAll(`.row-center-gender[data-center-detail="${centerId}"]`).forEach(cgRow => {
+                cgRow.classList.toggle('is-collapsed', !nextExpanded);
+            });
+            tbodyEdades.querySelectorAll(`.row-career[data-center-detail="${centerId}"]`).forEach(careerRow => {
+                careerRow.classList.toggle('is-collapsed', !nextExpanded);
+                const careerExpanded = careerRow.getAttribute('aria-expanded') === 'true';
+                const careerId = careerRow.dataset.careerGroup;
+                tbodyEdades.querySelectorAll(`.row-gender-detail[data-career-detail="${careerId}"]`).forEach(gRow => {
+                    gRow.classList.toggle('is-collapsed', !nextExpanded || !careerExpanded);
+                });
+            });
+        };
+
+        const toggleCarreraEdad = row => {
+            const expanded = row.getAttribute('aria-expanded') === 'true';
+            const nextExpanded = !expanded;
+            row.setAttribute('aria-expanded', String(nextExpanded));
+            tbodyEdades.querySelectorAll(`.row-gender-detail[data-career-detail="${row.dataset.careerGroup}"]`).forEach(gRow => {
+                gRow.classList.toggle('is-collapsed', !nextExpanded);
+            });
+        };
+
+        tbodyEdades.querySelectorAll('.row-level-expandable').forEach(row => {
+            row.addEventListener('click', () => toggleNivelEdad(row));
+            row.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggleNivelEdad(row);
+                }
+            });
+        });
+
+        tbodyEdades.querySelectorAll('.row-center').forEach(row => {
+            row.addEventListener('click', () => toggleCentroEdad(row));
+            row.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggleCentroEdad(row);
+                }
+            });
+        });
+
+        tbodyEdades.querySelectorAll('.row-career-expandable').forEach(row => {
+            row.addEventListener('click', () => toggleCarreraEdad(row));
+            row.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggleCarreraEdad(row);
+                }
+            });
+        });
+
+        const expandAllEdad = document.getElementById('b1-edad-expand-all');
+        const collapseAllEdad = document.getElementById('b1-edad-collapse-all');
+        if (expandAllEdad) expandAllEdad.onclick = () => {
+            tbodyEdades.querySelectorAll('.row-level-expandable, .row-center, .row-career-expandable').forEach(row => {
+                row.setAttribute('aria-expanded', 'true');
+                row.classList.remove('is-collapsed');
+            });
+            tbodyEdades.querySelectorAll('.row-center-gender, .row-gender-detail').forEach(row => row.classList.remove('is-collapsed'));
+        };
+        if (collapseAllEdad) collapseAllEdad.onclick = () => {
+            tbodyEdades.querySelectorAll('.row-level-expandable, .row-center, .row-career-expandable').forEach(row => {
+                row.setAttribute('aria-expanded', 'false');
+            });
+            const selectorColapsar = mostrarFilaNivel
+                ? '.row-center, .row-center-gender, .row-career, .row-gender-detail'
+                : '.row-center-gender, .row-career, .row-gender-detail';
+            tbodyEdades.querySelectorAll(selectorColapsar).forEach(row => row.classList.add('is-collapsed'));
+        };
+    };
+
+    renderTablaEdades('', 'media');
+    if (searchEdadMat) searchEdadMat.addEventListener('input', e => renderTablaEdades(e.target.value, grupoModalEdadActivo));
+    modalEdadFilterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            modalEdadFilterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const nuevoGrupo = btn.getAttribute('data-group') || 'media';
+            renderTablaEdades(searchEdadMat ? searchEdadMat.value : '', nuevoGrupo);
+        });
+    });
+    if (botonAbrirModalEdades) {
+        botonAbrirModalEdades.addEventListener('click', () => {
+            const activeAgeBtn = document.querySelector('#ageFilter .segment-btn.active');
+            const activeLevel = activeAgeBtn ? activeAgeBtn.getAttribute('data-level') : 'media';
+            const targetGroup = activeLevel === 'media' ? 'media' : 'superior';
+            modalEdadFilterButtons.forEach(b => b.classList.toggle('active', b.getAttribute('data-group') === targetGroup));
+            renderTablaEdades(searchEdadMat ? searchEdadMat.value : '', targetGroup);
+        });
+    }
     })
     .catch(error => {
     console.error('Detalle del error en Bloque 01:', error);

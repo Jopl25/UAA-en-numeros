@@ -1933,6 +1933,223 @@ body::before {
     color: var(--uaa-teal);
 }
 
+/* ==================== DISTRIBUCIÓN POR EDAD (BLOQUE 01) ==================== */
+.card-age-distribution {
+    grid-column: span 12;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(14px, 2.5vw, 28px);
+}
+
+.age-gender-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    position: relative;
+    z-index: 1;
+}
+
+.age-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.age-chart-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    z-index: 1;
+}
+
+.age-pyramid-header {
+    display: grid;
+    grid-template-columns: 1fr minmax(120px, 150px) 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px 6px;
+    border-bottom: 1px solid rgba(22, 48, 114, 0.1);
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+
+.age-pyramid-header-left {
+    text-align: right;
+    color: var(--uaa-navy);
+}
+
+.age-pyramid-header-center {
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.age-pyramid-header-right {
+    text-align: left;
+    color: var(--uaa-navy);
+}
+
+.age-pyramid-row {
+    display: grid;
+    grid-template-columns: 1fr minmax(120px, 150px) 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 10px;
+    border-radius: 12px;
+    opacity: 0.45;
+    transition: opacity 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.age-pyramid-row:hover {
+    opacity: 0.92;
+    background: rgba(22, 48, 114, 0.04);
+}
+
+.age-pyramid-row.is-top {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.58);
+    box-shadow: 0 4px 14px rgba(22, 48, 114, 0.08), inset 0 0 0 1px rgba(22, 48, 114, 0.14);
+}
+
+.age-pyramid-row.is-top:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.74);
+}
+
+.age-pyramid-side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.age-pyramid-side.is-left {
+    justify-content: flex-end;
+}
+
+.age-pyramid-side.is-right {
+    justify-content: flex-start;
+}
+
+.age-pyramid-track {
+    flex: 1 1 auto;
+    height: 18px;
+    background: rgba(22, 48, 114, 0.05);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.age-pyramid-side.is-left .age-pyramid-track {
+    justify-content: flex-end;
+    border-radius: 999px 3px 3px 999px;
+}
+
+.age-pyramid-side.is-right .age-pyramid-track {
+    justify-content: flex-start;
+    border-radius: 3px 999px 999px 3px;
+}
+
+.age-pyramid-bar {
+    height: 100%;
+    transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.age-pyramid-bar.is-men {
+    background: var(--color-men);
+    border-radius: 999px 0 0 999px;
+}
+
+.age-pyramid-bar.is-women {
+    background: var(--color-women);
+    border-radius: 0 999px 999px 0;
+}
+
+.age-pyramid-val {
+    flex: 0 0 auto;
+    min-width: 42px;
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--uaa-navy);
+}
+
+.age-pyramid-side.is-left .age-pyramid-val {
+    text-align: right;
+}
+
+.age-pyramid-side.is-right .age-pyramid-val {
+    text-align: left;
+}
+
+.age-pyramid-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.15;
+    padding: 2px 4px;
+    border-left: 1px solid rgba(22, 48, 114, 0.1);
+    border-right: 1px solid rgba(22, 48, 114, 0.1);
+}
+
+.age-pyramid-age-lbl {
+    font-family: var(--font-display);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--uaa-navy);
+    white-space: nowrap;
+}
+
+.age-pyramid-row.is-top .age-pyramid-age-lbl {
+    font-weight: 800;
+}
+
+.age-pyramid-sub {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.age-pyramid-nb {
+    color: var(--uaa-teal);
+    font-weight: 700;
+}
+
+@media (max-width: 700px) {
+    .age-pyramid-header,
+    .age-pyramid-row {
+        grid-template-columns: 1fr minmax(92px, 112px) 1fr;
+        gap: 6px;
+        padding-left: 4px;
+        padding-right: 4px;
+    }
+
+    .age-pyramid-val {
+        min-width: 30px;
+        font-size: 11px;
+    }
+
+    .age-pyramid-age-lbl {
+        font-size: 11px;
+    }
+
+    .age-pyramid-sub {
+        font-size: 9.5px;
+    }
+}
+
 /* ==================== BLOQUE 02: OFERTA EDUCATIVA ==================== */
 .offer-box {
     grid-column: span 12;
@@ -2288,6 +2505,7 @@ body::before {
 
 /* Reserva el espacio inferior izquierdo del asistente sin modificar el chatbot. */
 #modalCentros.glass-modal-overlay,
+#modalEdades.glass-modal-overlay,
 #modalEgresados.glass-modal-overlay {
     display: grid;
     grid-template-columns: 1fr minmax(0, 960px) 1fr;
@@ -2297,6 +2515,7 @@ body::before {
 }
 
 #modalCentros .glass-modal,
+#modalEdades .glass-modal,
 #modalEgresados .glass-modal {
     grid-column: 2;
     width: 100%;
@@ -2379,6 +2598,7 @@ body::before {
 
 @media (max-width: 1000px) {
     #modalCentros.glass-modal-overlay,
+    #modalEdades.glass-modal-overlay,
     #modalEgresados.glass-modal-overlay {
         display: flex;
         justify-content: center;
@@ -2391,6 +2611,7 @@ body::before {
     }
 
     #modalCentros .glass-modal,
+    #modalEdades .glass-modal,
     #modalEgresados .glass-modal {
         max-height: 76vh;
     }
@@ -2437,10 +2658,53 @@ body::before {
     color: var(--text-secondary);
 }
 
+#modalEdades .matricula-modal-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+#modalEdades .matricula-table-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-x: auto;
+    overflow-y: auto;
+    scrollbar-width: auto;
+    scrollbar-color: rgba(21, 96, 130, 0.5) rgba(22, 48, 114, 0.06);
+}
+
+#modalEdades .matricula-table-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+#modalEdades .matricula-table-scroll::-webkit-scrollbar-track {
+    background: rgba(22, 48, 114, 0.06);
+    border-radius: 99px;
+}
+
+#modalEdades .matricula-table-scroll::-webkit-scrollbar-thumb {
+    background: rgba(21, 96, 130, 0.45);
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+#modalEdades .matricula-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--uaa-teal);
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
 #modalEgresados .matricula-table-scroll {
     max-height: calc(85vh - 150px);
 }
 
+#tablaEdades th:first-child,
+#tablaEdades td:first-child,
 #tablaEgresados th:first-child,
 #tablaEgresados td:first-child {
     position: sticky;
@@ -2451,31 +2715,404 @@ body::before {
     box-shadow: 2px 0 8px rgba(22, 48, 114, 0.05);
 }
 
+.edad-table-hint {
+    margin: 0;
+    padding: 9px clamp(16px, 3vw, 32px);
+    color: var(--text-secondary);
+    font-size: 12px;
+    background: rgba(22, 48, 114, 0.035);
+    border-bottom: 1px solid rgba(22, 48, 114, 0.08);
+}
+
+.edad-table-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.edad-table-actions button {
+    border: 1px solid rgba(22, 48, 114, 0.16);
+    border-radius: 999px;
+    padding: 7px 11px;
+    background: #fff;
+    color: var(--uaa-navy);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.edad-table-actions button:hover,
+.edad-table-actions button:focus-visible {
+    background: #eef2f8;
+    outline: 2px solid var(--uaa-teal);
+    outline-offset: 1px;
+}
+
+#tablaEdades thead th:first-child,
 #tablaEgresados thead th:first-child {
     z-index: 12;
     background: rgba(244, 245, 248, 0.98);
 }
 
+#tablaEdades .row-level td:first-child,
 #tablaEgresados .row-level td:first-child {
     background: #f5f7fb;
 }
 
+#tablaEdades .row-level td {
+    background: #f1f5fb;
+    border-top: 2px solid rgba(22, 48, 114, 0.14);
+    font-weight: 800;
+}
+
+#tablaEdades .row-center td {
+    background: #fafbfd;
+    font-weight: 700;
+}
+
+#tablaEdades .row-career td {
+    font-weight: 600;
+}
+
+#tablaEdades .row-center td:first-child,
 #tablaEgresados .row-center td:first-child {
     background: #fafbfd;
 }
 
+#tablaEdades .row-center:hover td:first-child,
+#tablaEdades .row-center:focus td:first-child,
 #tablaEgresados .row-center:hover td:first-child,
 #tablaEgresados .row-center:focus td:first-child {
     background: #eef2f8;
 }
 
+#tablaEdades .row-career td:first-child,
 #tablaEgresados .row-career td:first-child {
     background: #ffffff;
 }
 
+#tablaEdades .row-career-expandable {
+    cursor: pointer;
+}
+
+#tablaEdades .row-career-expandable:hover td,
+#tablaEdades .row-career-expandable:focus td {
+    background: rgba(22, 48, 114, 0.04);
+}
+
+#tablaEdades .row-career-expandable:hover td:first-child,
+#tablaEdades .row-career-expandable:focus td:first-child {
+    background: #f5f7fb;
+}
+
+#tablaEdades .row-career-expandable:focus {
+    outline: 2px solid var(--uaa-teal);
+    outline-offset: -2px;
+}
+
+#tablaEdades .career-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 18px;
+    border-radius: 5px;
+    background: #fff;
+    border: 1px solid rgba(22, 48, 114, 0.14);
+    margin-left: 2px;
+}
+
+#tablaEdades .career-toggle::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-right: 1.8px solid var(--uaa-navy);
+    border-bottom: 1.8px solid var(--uaa-navy);
+    transform: translateX(-1px) rotate(-45deg);
+    transition: transform 0.2s ease;
+}
+
+#tablaEdades .row-career-expandable[aria-expanded="true"] .career-toggle::before {
+    transform: translateY(-1px) rotate(45deg);
+}
+
+/* Sub-filas de género desplegables debajo de cada carrera */
+.row-gender-detail.is-collapsed {
+    display: none !important;
+}
+
+.row-gender-detail td {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.row-gender-detail.is-men td {
+    background: rgba(140, 163, 204, 0.16);
+}
+
+.row-gender-detail.is-women td {
+    background: rgba(186, 156, 198, 0.16);
+}
+
+.row-gender-detail.is-nb td {
+    background: rgba(21, 96, 130, 0.11);
+}
+
+.level-name-wrap,
+.center-name-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.table-gender-pills {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.table-gender-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.row-center-gender.is-collapsed {
+    display: none !important;
+}
+
+.row-center-gender td {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.row-center-gender.is-men td {
+    background: rgba(140, 163, 204, 0.16);
+}
+
+.row-center-gender.is-women td {
+    background: rgba(186, 156, 198, 0.16);
+}
+
+.row-center-gender.is-nb td {
+    background: rgba(21, 96, 130, 0.11);
+}
+
+#tablaEdades .row-center-gender.is-men td:first-child {
+    background: #edf1f8;
+}
+
+#tablaEdades .row-center-gender.is-women td:first-child {
+    background: #f4eff6;
+}
+
+#tablaEdades .row-center-gender.is-nb td:first-child {
+    background: #e9f1f5;
+}
+
+.row-center-gender td:first-child {
+    position: relative;
+    padding-left: calc(clamp(16px, 2vw, 24px) + 48px);
+}
+
+.row-center-gender td:first-child::before {
+    content: "";
+    position: absolute;
+    left: calc(clamp(16px, 2vw, 24px) + 28px);
+    top: -1px;
+    bottom: -1px;
+    width: 1.5px;
+    background: #949eb0;
+}
+
+.row-center-gender td:first-child::after {
+    content: "";
+    position: absolute;
+    left: calc(clamp(16px, 2vw, 24px) + 28.75px);
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid #949eb0;
+    background: #eef1f6;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.row-center-gender .gender-branch-cell::before {
+    content: none;
+}
+
+.row-center-gender .gender-branch-cell::after {
+    left: calc(clamp(16px, 2vw, 24px) + 32.5px);
+}
+
+#tablaEdades .row-gender-detail.is-men td:first-child {
+    background: #edf1f8;
+}
+
+#tablaEdades .row-gender-detail.is-women td:first-child {
+    background: #f4eff6;
+}
+
+#tablaEdades .row-gender-detail.is-nb td:first-child {
+    background: #e9f1f5;
+}
+
+.row-gender-detail td:first-child {
+    position: relative;
+    padding-left: calc(clamp(16px, 2vw, 24px) + 84px);
+}
+
+/* Continuidad de la línea del centro cuando la carrera padre no es la última */
+.row-gender-detail:not(.in-last-career) td:first-child::before {
+    content: "";
+    position: absolute;
+    left: calc(clamp(16px, 2vw, 24px) + 28px);
+    top: -1px;
+    bottom: -1px;
+    width: 1.5px;
+    background: #949eb0;
+}
+
+/* Línea vertical secundaria para los géneros debajo de la carrera */
+.gender-branch-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gender-branch-cell::before {
+    content: "";
+    position: absolute;
+    left: calc(clamp(16px, 2vw, 24px) + 64px);
+    top: -1px;
+    bottom: -1px;
+    width: 1.5px;
+    background: #949eb0;
+}
+
+.row-gender-detail.is-last-gender .gender-branch-cell::before {
+    bottom: 50%;
+}
+
+.row-gender-detail td:first-child::after {
+    content: "";
+    position: absolute;
+    left: calc(clamp(16px, 2vw, 24px) + 64.75px);
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid #949eb0;
+    background: #eef1f6;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.gender-branch-cell::after {
+    content: "";
+    position: absolute;
+    left: calc(clamp(16px, 2vw, 24px) + 68px);
+    top: 50%;
+    width: 8px;
+    height: 1.5px;
+    background: #949eb0;
+    transform: translateY(-50%);
+}
+
+#tablaEdades .col-total,
 #tablaEgresados .col-total {
     font-weight: 700;
     color: var(--uaa-navy);
+}
+
+#tablaEdades tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+#tablaEdades tfoot td {
+    background: #e9eff8;
+    color: var(--uaa-navy);
+    font-weight: 800;
+    font-size: 13.5px;
+    border-bottom: 1px solid rgba(22, 48, 114, 0.08);
+}
+
+#tablaEdades tfoot tr.row-total-general td {
+    border-top: 2px solid rgba(22, 48, 114, 0.2);
+}
+
+#tablaEdades tfoot tr.row-total-general td:first-child {
+    background: #e9eff8;
+}
+
+#tablaEdades tfoot tr.row-total-gender td {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+#tablaEdades tfoot tr.row-total-gender.is-men td {
+    background: #edf1f8;
+}
+
+#tablaEdades tfoot tr.row-total-gender.is-women td {
+    background: #f4eff6;
+}
+
+#tablaEdades tfoot tr.row-total-gender.is-nb td {
+    background: #e9f1f5;
+    border-bottom: none;
+}
+
+#tablaEdades tfoot tr.row-total-gender td:first-child {
+    position: sticky;
+    left: 0;
+    padding-left: calc(clamp(16px, 2vw, 24px) + 44px);
+    z-index: 12;
+}
+
+#tablaEdades tfoot tr.row-total-gender td:first-child::before {
+    content: "";
+    position: absolute;
+    left: calc(clamp(16px, 2vw, 24px) + 22px);
+    top: -1px;
+    bottom: -1px;
+    width: 1.5px;
+    background: #949eb0;
+}
+
+#tablaEdades tfoot tr.row-total-gender.is-last-gender td:first-child::before {
+    bottom: 50%;
+}
+
+#tablaEdades tfoot tr.row-total-gender td:first-child::after {
+    content: "";
+    position: absolute;
+    left: calc(clamp(16px, 2vw, 24px) + 22.75px);
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid #949eb0;
+    background: #eef1f6;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    z-index: 1;
 }
 
 #tablaEgresados tfoot td {
@@ -2490,8 +3127,12 @@ body::before {
     border-bottom: none;
 }
 
+#tablaEdades tfoot td:first-child,
 #tablaEgresados tfoot td:first-child {
     z-index: 12;
+}
+
+#tablaEgresados tfoot td:first-child {
     background: #e9eff8;
 }
 
@@ -2525,6 +3166,39 @@ body::before {
     font-weight: 700;
     color: var(--uaa-navy);
     font-size: 14px;
+}
+
+.row-level-expandable {
+    cursor: pointer;
+}
+
+.row-level-expandable:hover td,
+.row-level-expandable:focus td {
+    background: rgba(22, 48, 114, 0.06);
+}
+
+#tablaEdades .row-level-expandable:hover td:first-child,
+#tablaEdades .row-level-expandable:focus td:first-child {
+    background: #eef2f8;
+}
+
+.row-level-expandable:focus {
+    outline: 2px solid var(--uaa-teal);
+    outline-offset: -2px;
+}
+
+.row-level-expandable[aria-expanded="true"] .center-toggle::before {
+    transform: translateY(-1px) rotate(45deg);
+}
+
+.level-header-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.row-center.is-collapsed {
+    display: none !important;
 }
 
 .row-center td {
